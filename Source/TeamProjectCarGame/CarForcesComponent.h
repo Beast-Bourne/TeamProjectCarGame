@@ -66,12 +66,12 @@ private:
 	const float rearWheelOffset = 1.5f;
 	const float frontTrackWidth = 1.6f; // the width of the front axle in meters
 	const float rearTrackWidth = 1.56f;
-	const float rollCentreHeight = 0.1f;
+	const float rollCentreHeight = 0.1f; // height of the roll centre above the ground in meters
 	const float frontSuspensionStiffness = 120000.0f; // suspension in N/m
 	const float rearSuspensionStiffness = 200000.0f;
-	const float momentOfIntertiaX = 2000.0f; // moment of intertia about the X axis in kg m^2
-	const float momentOfIntertiaY = 3000.0f;
-	const float momentOfIntertiaZ = 5000.0f;
+	const float momentOfInertiaX = 2000.0f; // moment of inertia about the X axis in kg m^2
+	const float momentOfInertiaY = 3000.0f;
+	const float momentOfInertiaZ = 5000.0f;
 	const float frontArea = 2.2f; // frontal area in m^2
 	const float dragCoefficient = 0.39f; // the drag coefficient used for calculating the air resistance
 	const float rollResistanceCoefficient = 0.012f; // the rolling resistance coefficient used for calculating the roll resistance force
@@ -79,8 +79,9 @@ private:
 	const float g = 9.81f; // gravity
 
 	// Tire constants
-	const float tireRadius = 0.0f;
-	const float tireInertia = 0.0f;
+	const FWheelLoads staticWheelLoads = CalculateStaticWheelLoads();
+	const float tireRadius = 0.350f; // tire radius in meters
+	const float tireInertia = 2.2f; // the moment of inertia of the tires in kg m^2
 	const float relaxationLengthCoefficient = 0.5f;
 	const float threadStiffness = 30.0f; // N/m
 	const float casterOffset = 0.03f; // m

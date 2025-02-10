@@ -63,14 +63,13 @@ float UCarForcesComponent::CalculateLoadChangeFromLateralForce(float lateralForc
 
 FWheelLoads UCarForcesComponent::CalculateSlopedWheelLoads(float bankAngle, float gradientAngle, float accel)
 {
-	wheelLoads = CalculateStaticWheelLoads();
 	float frontLoadChange = CalculateLoadChangeFromLateralForce(mass*lateralAcceleration, true);
 	float rearLoadChange = CalculateLoadChangeFromLateralForce(mass*lateralAcceleration, false);
-	//                                             load change from turning                                        load change from banking           load change from a gradient       load change from forward acceleration
-	wheelLoads.FrontRight = wheelLoads.FrontRight +frontLoadChange+ wheelLoads.FrontRight * centreOfMassHeight * ((2.0f*bankAngle/frontTrackWidth) - (gradientAngle/frontWheelOffset) - (accel/(g*frontWheelOffset)));
-	wheelLoads.FrontLeft = wheelLoads.FrontLeft -frontLoadChange+ wheelLoads.FrontLeft * centreOfMassHeight * (-2.0f*bankAngle/frontTrackWidth - gradientAngle/frontWheelOffset - accel/(g*frontWheelOffset));
-	wheelLoads.RearRight = wheelLoads.RearRight +rearLoadChange+ wheelLoads.RearRight * centreOfMassHeight * (2.0f * bankAngle/rearTrackWidth + gradientAngle/rearWheelOffset + accel/(g*rearWheelOffset));
-	wheelLoads.RearLeft = wheelLoads.RearLeft -rearLoadChange+ wheelLoads.RearLeft * centreOfMassHeight * (-2.0f * bankAngle/rearTrackWidth + gradientAngle/rearWheelOffset + accel/(g*rearWheelOffset));
+	//                                                   load change from turning                                        load change from banking           load change from a gradient       load change from forward acceleration
+	wheelLoads.FrontRight = staticWheelLoads.FrontRight +frontLoadChange+ staticWheelLoads.FrontRight * centreOfMassHeight * ((2.0f*bankAngle/frontTrackWidth) - (gradientAngle/frontWheelOffset) - (accel/(g*frontWheelOffset)));
+	wheelLoads.FrontLeft = staticWheelLoads.FrontLeft -frontLoadChange+ staticWheelLoads.FrontLeft * centreOfMassHeight * (-2.0f*bankAngle/frontTrackWidth - gradientAngle/frontWheelOffset - accel/(g*frontWheelOffset));
+	wheelLoads.RearRight = staticWheelLoads.RearRight +rearLoadChange+ staticWheelLoads.RearRight * centreOfMassHeight * (2.0f * bankAngle/rearTrackWidth + gradientAngle/rearWheelOffset + accel/(g*rearWheelOffset));
+	wheelLoads.RearLeft = staticWheelLoads.RearLeft -rearLoadChange+ staticWheelLoads.RearLeft * centreOfMassHeight * (-2.0f * bankAngle/rearTrackWidth + gradientAngle/rearWheelOffset + accel/(g*rearWheelOffset));
 
 	totalWheelLoadToCarWeightRatio = CalculateWheelLoadRatio();
 	return wheelLoads;
