@@ -2,6 +2,7 @@
 
 
 #include "CarForcesComponent.h"
+#include "Math/UnrealMathUtility.h"
 
 // Sets default values for this component's properties
 UCarForcesComponent::UCarForcesComponent()
@@ -74,6 +75,22 @@ FWheelLoads UCarForcesComponent::CalculateSlopedWheelLoads(float bankAngle, floa
 	totalWheelLoadToCarWeightRatio = CalculateWheelLoadRatio();
 	return wheelLoads;
 }
+
+// calculates the drag force. using F = 1/2 * ρ * v^2 * A
+// calculates the roll resistance using F = f * m * g. Min(1, velocity) is used to remove the rolling resistance when the car is stationary
+// * -Sign(velocity) makes sure the drag and roll resistance are in the opposite direction
+// calculates the resistance due to the car's weight when on a slope using F = m * g * sin(θ)
+float UCarForcesComponent::calculateResistanceForce()
+{
+	float drag = 0.5f * airDensity * dragCoefficient * frontArea * velocity * velocity * -FMath::Sign(velocity);
+	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1, velocity) * -FMath::Sign(velocity);
+	float slope = - mass * g * FMath::Sin(gradient);
+	
+	return drag + rollResistance + slope;
+}
+
+
+
 
 
 

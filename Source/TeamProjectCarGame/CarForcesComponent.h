@@ -58,6 +58,12 @@ public:
 	float lateralAcceleration;
 	
 private:
+	// non constants
+	float velocity = 0.0f; // vehicles forward velocity in m/s
+	float acceleration = 0.0f; // vehicles forward acceleration in m/s^2
+	float gradient = 0.0f; // vehicles pitch in radians (positive when the front is above the rear)
+	float bank = 0.0f; // vehicles roll in radians (positive when the left is above the right)
+	
 	// Main body constants
 	const float mass = 1450.0f; // mass in Kg
 	const float centreOfMassHeight = 0.48f; // height of the centre of mass above the ground in meters
@@ -88,6 +94,10 @@ private:
 	const float contactPatchLength = 0.1f; // m
 	const float slidingFrictionConstant = 0.7f; // for dry asphalt
 
+	// Tire load functions
 	float CalculateLoadChangeFromLateralForce(float lateralForce, bool forFrontAxel);
 	float CalculateWheelLoadRatio();
+
+	// Longitudinal force functions
+	float calculateResistanceForce();
 };
