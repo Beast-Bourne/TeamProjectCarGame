@@ -95,7 +95,7 @@ FWheelLoads UCarForcesComponent::CalculateWheelLoads(float bankAngle, float grad
 // calculates the roll resistance using F = f * m * g. Min(1, velocity) is used to remove the rolling resistance when the car is stationary
 // * -Sign(velocity) makes sure the drag and roll resistance are in the opposite direction
 // calculates the resistance due to the car's weight when on a slope using F = m * g * sin(θ)
-float UCarForcesComponent::calculateResistanceForce()
+float UCarForcesComponent::CalculateResistanceForce()
 {
 	float drag = 0.5f * airDensity * dragCoefficient * frontArea * velocity * velocity * -FMath::Sign(velocity);
 	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1, velocity) * -FMath::Sign(velocity);
@@ -103,6 +103,38 @@ float UCarForcesComponent::calculateResistanceForce()
 	
 	return drag + rollResistance + slope;
 }
+
+// The rotational force can be used to get the angular acceleration (cars local yaw acceleration) using F = Iα (I: moment of inertia in the Z axis, α: angular acceleration)
+FCarForces UCarForcesComponent::CalculateCarForces()
+{
+	FCarForces carForces;
+	float totalLongitudinalForce = 0.0f;
+	float totalLateralForce = 0.0f;
+	float totalRotationalForce = 0.0f;
+
+	totalLongitudinalForce += TireMap[EWheelPosition::FrontRight].ReturnLongitudinalForceForCar();
+	totalLongitudinalForce += TireMap[EWheelPosition::FrontLeft].ReturnLongitudinalForceForCar();
+	totalLongitudinalForce += TireMap[EWheelPosition::RearRight].ReturnLongitudinalForceForCar();
+	totalLongitudinalForce += TireMap[EWheelPosition::RearLeft].ReturnLongitudinalForceForCar();
+	totalLongitudinalForce += CalculateResistanceForce();
+	
+	totalLateralForce += TireMap[EWheelPosition::FrontRight].ReturnLateralForceForCar();
+	totalLateralForce += TireMap[EWheelPosition::FrontLeft].ReturnLateralForceForCar();
+	totalLateralForce += TireMap[EWheelPosition::RearRight].ReturnLateralForceForCar();
+	totalLateralForce += TireMap[EWheelPosition::RearLeft].ReturnLateralForceForCar();
+
+	totalRotationalForce += TireMap[EWheelPosition::FrontRight].ReturnLateralForceForCar() * frontWheelOffset - TireMap[EWheelPosition::FrontRight].ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
+	totalRotationalForce += TireMap[EWheelPosition::FrontLeft].ReturnLateralForceForCar() * frontWheelOffset + TireMap[EWheelPosition::FrontLeft].ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
+	totalRotationalForce += TireMap[EWheelPosition::RearRight].ReturnLateralForceForCar() * -rearWheelOffset - TireMap[EWheelPosition::RearRight].ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
+	totalRotationalForce += TireMap[EWheelPosition::RearLeft].ReturnLateralForceForCar() * -rearWheelOffset + TireMap[EWheelPosition::RearLeft].ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
+
+	carForces.longitudinalForce = totalLongitudinalForce;
+	carForces.lateralForce = totalLateralForce;
+	carForces.angularForce = totalRotationalForce;
+
+	return carForces;
+}
+
 
 
 

@@ -39,18 +39,53 @@ struct FTireInfo
 	UPROPERTY(BlueprintReadOnly)
 	float load;
 	UPROPERTY(BlueprintReadOnly)
-	float longitudinalForce;
+	float localLongitudinalForce;
 	UPROPERTY(BlueprintReadOnly)
-	float lateralForce;
+	float localLateralForce;
 	UPROPERTY(BlueprintReadOnly)
 	float delta; // The angle between the tires local forward direction and the cars forward direction
+	UPROPERTY(BlueprintReadOnly)
+	float offsetFromCentreOfMass;
+	UPROPERTY(BlueprintReadOnly)
+	float trackWidth;
 
 	FTireInfo()
 	{
 		load = 0.0f;
+		localLongitudinalForce = 0.0f;
+		localLateralForce = 0.0f;
+		delta = 0.0f;
+		offsetFromCentreOfMass = 0.0f;
+		trackWidth = 0.0f;
+	}
+
+	float ReturnLongitudinalForceForCar()
+	{
+		return localLongitudinalForce * FMath::Cos(delta) - localLateralForce * FMath::Sin(delta);
+	}
+	float ReturnLateralForceForCar()
+	{
+		return localLongitudinalForce * FMath::Sin(delta) + localLateralForce * FMath::Cos(delta);
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FCarForces
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	float longitudinalForce;
+	UPROPERTY(BlueprintReadOnly)
+	float lateralForce;
+	UPROPERTY(BlueprintReadOnly)
+	float angularForce;
+
+	FCarForces()
+	{
 		longitudinalForce = 0.0f;
 		lateralForce = 0.0f;
-		delta = 0.0f;
+		angularForce = 0.0f;
 	}
 };
 
@@ -134,6 +169,7 @@ private:
 	float CalculateLoadChangeFromLateralForce(float lateralForce, bool forFrontAxel);
 	float CalculateWheelLoadRatio();
 
-	// Longitudinal force functions
-	float calculateResistanceForce();
+	// Car force functions
+	float CalculateResistanceForce();
+	FCarForces CalculateCarForces();
 };
