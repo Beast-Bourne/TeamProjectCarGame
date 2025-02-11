@@ -43,25 +43,10 @@ void UCarForcesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 void UCarForcesComponent::InitialiseTireArray()
 {
-	FTireInfo FRTireInfo;
-	FRTireInfo.trackWidth = frontTrackWidth;
-	FRTireInfo.offsetFromCentreOfMass = frontWheelOffset;
-	FRTireInfo.load = staticWheelLoads.FrontRight;
-	
-	FTireInfo FLTireInfo;
-	FLTireInfo.trackWidth = frontTrackWidth;
-	FLTireInfo.offsetFromCentreOfMass = frontWheelOffset;
-	FLTireInfo.load = staticWheelLoads.FrontLeft;
-	
-	FTireInfo RRTireInfo;
-	RRTireInfo.trackWidth = rearTrackWidth;
-	RRTireInfo.offsetFromCentreOfMass = rearWheelOffset;
-	RRTireInfo.load = staticWheelLoads.RearRight;
-	
-	FTireInfo RLTireInfo;
-	RLTireInfo.trackWidth = rearTrackWidth;
-	RLTireInfo.offsetFromCentreOfMass = rearWheelOffset;
-	RLTireInfo.load = staticWheelLoads.RearLeft;
+	FTireInfo FRTireInfo(staticWheelLoads.FrontRight, frontWheelOffset, frontTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
+	FTireInfo FLTireInfo(staticWheelLoads.FrontLeft, frontWheelOffset, frontTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
+	FTireInfo RRTireInfo(staticWheelLoads.RearLeft, rearWheelOffset, rearTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
+	FTireInfo RLTireInfo(staticWheelLoads.RearLeft, rearWheelOffset, rearTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
 	
 	TireMap.Add(EWheelPosition::FrontRight, FRTireInfo);
 	TireMap.Add(EWheelPosition::FrontLeft, FLTireInfo);
@@ -123,9 +108,13 @@ void UCarForcesComponent::CalculateWheelsLocalVelocities()
 	FTireInfo &tireRL = TireMap[EWheelPosition::RearLeft];
 
 	tireFR.CalculateLocalVelocity(-1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
+	tireFR.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
 	tireFL.CalculateLocalVelocity(1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
+	tireFL.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
 	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
+	tireRR.UpdateMemberVariables(0.0f, 0.0f, -1.0f);
 	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
+	tireRL.UpdateMemberVariables(0.0f, 0.0f, -1.0f);
 }
 
 
@@ -177,11 +166,6 @@ void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 {
 	carVelocity += carAcceleration * deltaTime;
 	carAngularVelocity += carAngularVelocity * deltaTime;
-
-	TireMap[EWheelPosition::FrontRight].ApplyAccelerations(deltaTime);
-	TireMap[EWheelPosition::FrontLeft].ApplyAccelerations(deltaTime);
-	TireMap[EWheelPosition::RearRight].ApplyAccelerations(deltaTime);
-	TireMap[EWheelPosition::RearLeft].ApplyAccelerations(deltaTime);
 }
 
 

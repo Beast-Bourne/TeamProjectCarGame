@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Math/UnrealMathUtility.h"
 #include "CarForcesComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -37,40 +38,109 @@ struct FTireInfo
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	FVector localVelocity;
+	FVector localVelocity;             // velocity of the tire relative to the ground
 	UPROPERTY(BlueprintReadOnly)
-	FVector localAcceleration;
+	float angularVelocity;             // angular velocity of the tire
 	UPROPERTY(BlueprintReadOnly)
-	float angularVelocity;
+	float slipVelocity;                // velocity of the tire in a no-slip condition
 	UPROPERTY(BlueprintReadOnly)
-	float angularAcceleration;
-	
+	float longitudinalSlipFactor;      // slip of the tire in the longitudinal direction
 	UPROPERTY(BlueprintReadOnly)
-	float load;
+	float lateralSlipFactor;           // slip of the tire in the lateral direction
 	UPROPERTY(BlueprintReadOnly)
-	float localLongitudinalForce;
+	float combinedSlipFactor;          // slip factor used for determining conditions for calculating slip forces
 	UPROPERTY(BlueprintReadOnly)
-	float localLateralForce;
+	float slipConditionFactor;         // factor used for checking if the tire is working in linear or sliding conditions
 	UPROPERTY(BlueprintReadOnly)
-	float delta; // The angle between the tires local forward direction and the cars forward direction
+	float threadStiffness;
 	UPROPERTY(BlueprintReadOnly)
-	float offsetFromCentreOfMass;
-	UPROPERTY(BlueprintReadOnly)
-	float trackWidth;
+	float staticFrictionCoefficient;
+	float slidingFrictionCoefficient;
+	float xSlipFriction;
+	float ySlipFriction;
+	float patchLength;
+	float selfAligningTorque;
+	float casterOffset;
+	float relaxationConstant;
 
+	float xSlipForceWithRelaxation;
+	float ySlipForceWithRelaxation;
+	float selfAligningTorqueWithRelaxation;
+	
+	
+	float load; // normal force acting on the tire in kg
+	float localLongitudinalForce;
+	float localLateralForce;
+	float localSelfAligningTorque;
+	float delta; // The angle between the tires local forward direction and the cars forward direction
+	float offsetFromCentreOfMass; // offset (in x-axis) between the wheel and the car's CoM
+	float trackWidth; // width of the axel
+	float radius; // tire's radius
+
+	// default constructor
 	FTireInfo()
 	{
 		localVelocity = FVector::ZeroVector;
-		localAcceleration = FVector::ZeroVector;
+		angularVelocity = 0;
+		slipVelocity = 0;
+		longitudinalSlipFactor = 0;
+		lateralSlipFactor = 0;
+		combinedSlipFactor = 0;
+		slipConditionFactor = 0;
+		threadStiffness = 0;
+		staticFrictionCoefficient = 0;
+		slidingFrictionCoefficient = 0;
+		xSlipFriction = 0;
+		ySlipFriction = 0;
+		patchLength = 0;
+		selfAligningTorque = 0;
+		casterOffset = 0;
+		relaxationConstant = 0;
+		xSlipForceWithRelaxation = 0;
+		ySlipForceWithRelaxation = 0;
+		selfAligningTorqueWithRelaxation = 0;
+
+		load = 0;
+		localLongitudinalForce = 0;
+		localLateralForce = 0;
+		localSelfAligningTorque = 0;
+		delta = 0;
+		offsetFromCentreOfMass = 0;
+		trackWidth = 0;
+		radius = 0;
+	}
+
+	// main constructor
+	FTireInfo(float load, float offset, float trackWidth, float radius, float threadStiffness, float patchLength, float casterOffset, float relaxationConstant)
+	{
+		localVelocity = FVector::ZeroVector;
 		angularVelocity = 0.0f;
-		angularAcceleration = 0.0f;
+		slipVelocity = 0.0f;
+		longitudinalSlipFactor = 0.0f;
+		lateralSlipFactor = 0.0f;
+		combinedSlipFactor = 0.0f;
+		slipConditionFactor = 0.0f;
+		staticFrictionCoefficient = 1.0f;
+		slidingFrictionCoefficient = 1.0f;
+		xSlipFriction = 0.0f;
+		ySlipFriction = 0.0f;
+		selfAligningTorque = 0.0f;
+		xSlipForceWithRelaxation = 0.0f;
+		ySlipForceWithRelaxation = 0.0f;
+		selfAligningTorqueWithRelaxation = 0.0f;
 		
-		load = 0.0f;
+		this->load = load;
 		localLongitudinalForce = 0.0f;
 		localLateralForce = 0.0f;
+		localSelfAligningTorque = 0.0f;
 		delta = 0.0f;
-		offsetFromCentreOfMass = 0.0f;
-		trackWidth = 0.0f;
+		this->offsetFromCentreOfMass = offset;
+		this->trackWidth = trackWidth;
+		this->radius = radius;
+		this->threadStiffness = threadStiffness;
+		this->patchLength = patchLength;
+		this->casterOffset = casterOffset;
+		this->relaxationConstant = relaxationConstant;
 	}
 
 	float ReturnLongitudinalForceForCar()
@@ -82,17 +152,45 @@ struct FTireInfo
 		return localLongitudinalForce * FMath::Sin(delta) + localLateralForce * FMath::Cos(delta);
 	}
 
-	void CalculateLocalVelocity(float xMultiplier, float yMultiplier, FVector carVelocity, float carYawAngularVelocity)
+	// sets the local velocity of this tire to the cars velocity and corrects it for any angular velocity about the yaw of the car
+	void CalculateLocalVelocity(float xMultiplier, float yMultiplier, const FVector &carVelocity, float carYawAngularVelocity)
 	{
 		float xValue = carVelocity.X + xMultiplier * carYawAngularVelocity * trackWidth * 0.5f;
 		float yValue = offsetFromCentreOfMass * carYawAngularVelocity + yMultiplier * carVelocity.Y;
 		float zValue = localVelocity.Z;
 		localVelocity = FVector(xValue, yValue, zValue);
 	}
-	void ApplyAccelerations(float deltaTime)
+
+	void UpdateMemberVariables(float drivingTorque, float brakingTorque, float slipMultiplier)
 	{
-		localVelocity += localAcceleration * deltaTime;
-		angularVelocity += angularAcceleration * deltaTime;
+		slipVelocity = angularVelocity * radius;
+		longitudinalSlipFactor = (slipVelocity -localVelocity.X)/FMath::Max(slipVelocity, 1.0f);
+		float slipFunction = (FMath::Tanh(10 * localVelocity.X -8.0f)+1.0f)/2.0f;
+		lateralSlipFactor = slipFunction * slipMultiplier * (delta - localVelocity.Y/FMath::Max(slipVelocity, 1.0f));
+		combinedSlipFactor = FMath::Sqrt(longitudinalSlipFactor * longitudinalSlipFactor + lateralSlipFactor * lateralSlipFactor);
+		slipConditionFactor = threadStiffness/(3*staticFrictionCoefficient) * combinedSlipFactor;
+
+		float slipFrictionFactor = CalculateSlipFrictionFactor();
+		xSlipFriction = slipFrictionFactor * longitudinalSlipFactor;
+		ySlipFriction = slipFrictionFactor * lateralSlipFactor;
+		selfAligningTorque = (-patchLength*threadStiffness*lateralSlipFactor)/3.0f * FMath::Square(FMath::Min(0, slipConditionFactor-1.0f)) * (7*slipConditionFactor -1.0f) * load * 9.81f - (casterOffset * slipFrictionFactor * lateralSlipFactor);
+
+		xSlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLongitudinalForce - xSlipFriction);
+		ySlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLateralForce - ySlipFriction);
+		selfAligningTorqueWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localSelfAligningTorque - selfAligningTorque);
+	}
+
+	float CalculateSlipFrictionFactor()
+	{
+		if (slipConditionFactor < 1.0f)
+		{
+			return -threadStiffness * (-1.0f * slipConditionFactor - FMath::Pow(slipConditionFactor, 2.0f/3.0f)) * load * 9.81f;
+		}
+
+		float exponent = -0.01f * (slipConditionFactor -1.0f) * (slipConditionFactor -1.0f);
+		float part1 = (slidingFrictionCoefficient + (1-slidingFrictionCoefficient) * FMath::Exp(exponent));
+		float part2 = staticFrictionCoefficient * load * 9.81f / combinedSlipFactor;
+		return part1 * part2;
 	}
 };
 
