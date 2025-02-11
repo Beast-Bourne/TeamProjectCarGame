@@ -11,6 +11,11 @@ UCarForcesComponent::UCarForcesComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
+	carVelocity = FVector(1.0f, 0.0f, 0.0f);
+	carAcceleration = FVector::ZeroVector;
+	carAngularVelocity = FVector::ZeroVector;
+	carAngularAcceleration = FVector::ZeroVector;
+	
 	wheelLoads = CalculateStaticWheelLoads();
 	totalWheelLoadToCarWeightRatio = CalculateWheelLoadRatio();
 	longitudinalAcceleration = 0.0f;
@@ -31,14 +36,33 @@ void UCarForcesComponent::BeginPlay()
 void UCarForcesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	CalculateWheelsLocalVelocities();
+	ApplyAllAccelerations(DeltaTime);
 }
 
 void UCarForcesComponent::InitialiseTireArray()
 {
 	FTireInfo FRTireInfo;
+	FRTireInfo.trackWidth = frontTrackWidth;
+	FRTireInfo.offsetFromCentreOfMass = frontWheelOffset;
+	FRTireInfo.load = staticWheelLoads.FrontRight;
+	
 	FTireInfo FLTireInfo;
+	FLTireInfo.trackWidth = frontTrackWidth;
+	FLTireInfo.offsetFromCentreOfMass = frontWheelOffset;
+	FLTireInfo.load = staticWheelLoads.FrontLeft;
+	
 	FTireInfo RRTireInfo;
+	RRTireInfo.trackWidth = rearTrackWidth;
+	RRTireInfo.offsetFromCentreOfMass = rearWheelOffset;
+	RRTireInfo.load = staticWheelLoads.RearRight;
+	
 	FTireInfo RLTireInfo;
+	RLTireInfo.trackWidth = rearTrackWidth;
+	RLTireInfo.offsetFromCentreOfMass = rearWheelOffset;
+	RLTireInfo.load = staticWheelLoads.RearLeft;
+	
 	TireMap.Add(EWheelPosition::FrontRight, FRTireInfo);
 	TireMap.Add(EWheelPosition::FrontLeft, FLTireInfo);
 	TireMap.Add(EWheelPosition::RearRight, RRTireInfo);
@@ -66,7 +90,7 @@ float UCarForcesComponent::CalculateWheelLoadRatio()
 }
 
 
-float UCarForcesComponent::CalculateLoadChangeFromLateralForce(float lateralForce, bool forFrontAxel)
+float UCarForcesComponent::CalculateLoadChangeFromCorneringForce(float lateralForce, bool forFrontAxel)
 {
 	float trackWidth = (forFrontAxel) ? frontTrackWidth : rearTrackWidth;
 	float rollCentreToCentreOfMass = centreOfMassHeight - rollCentreHeight;
@@ -79,8 +103,8 @@ float UCarForcesComponent::CalculateLoadChangeFromLateralForce(float lateralForc
 
 FWheelLoads UCarForcesComponent::CalculateWheelLoads(float bankAngle, float gradientAngle, float accel)
 {
-	float frontLoadChange = CalculateLoadChangeFromLateralForce(mass*lateralAcceleration, true);
-	float rearLoadChange = CalculateLoadChangeFromLateralForce(mass*lateralAcceleration, false);
+	float frontLoadChange = CalculateLoadChangeFromCorneringForce(mass*lateralAcceleration, true);
+	float rearLoadChange = CalculateLoadChangeFromCorneringForce(mass*lateralAcceleration, false);
 	//                                                   load change from turning                                        load change from banking           load change from a gradient       load change from forward acceleration
 	wheelLoads.FrontRight = staticWheelLoads.FrontRight +frontLoadChange+ staticWheelLoads.FrontRight * centreOfMassHeight * ((2.0f*bankAngle/frontTrackWidth) - (gradientAngle/frontWheelOffset) - (accel/(g*frontWheelOffset)));
 	wheelLoads.FrontLeft = staticWheelLoads.FrontLeft -frontLoadChange+ staticWheelLoads.FrontLeft * centreOfMassHeight * (-2.0f*bankAngle/frontTrackWidth - gradientAngle/frontWheelOffset - accel/(g*frontWheelOffset));
@@ -90,6 +114,20 @@ FWheelLoads UCarForcesComponent::CalculateWheelLoads(float bankAngle, float grad
 	totalWheelLoadToCarWeightRatio = CalculateWheelLoadRatio();
 	return wheelLoads;
 }
+
+void UCarForcesComponent::CalculateWheelsLocalVelocities()
+{
+	FTireInfo &tireFR = TireMap[EWheelPosition::FrontRight];
+	FTireInfo &tireFL = TireMap[EWheelPosition::FrontLeft];
+	FTireInfo &tireRR = TireMap[EWheelPosition::RearRight];
+	FTireInfo &tireRL = TireMap[EWheelPosition::RearLeft];
+
+	tireFR.CalculateLocalVelocity(-1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
+	tireFL.CalculateLocalVelocity(1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
+	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
+	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
+}
+
 
 // calculates the drag force. using F = 1/2 * ρ * v^2 * A
 // calculates the roll resistance using F = f * m * g. Min(1, velocity) is used to remove the rolling resistance when the car is stationary
@@ -134,6 +172,18 @@ FCarForces UCarForcesComponent::CalculateCarForces()
 
 	return carForces;
 }
+
+void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
+{
+	carVelocity += carAcceleration * deltaTime;
+	carAngularVelocity += carAngularVelocity * deltaTime;
+
+	TireMap[EWheelPosition::FrontRight].ApplyAccelerations(deltaTime);
+	TireMap[EWheelPosition::FrontLeft].ApplyAccelerations(deltaTime);
+	TireMap[EWheelPosition::RearRight].ApplyAccelerations(deltaTime);
+	TireMap[EWheelPosition::RearLeft].ApplyAccelerations(deltaTime);
+}
+
 
 
 

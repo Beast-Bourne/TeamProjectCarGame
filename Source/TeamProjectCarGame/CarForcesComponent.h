@@ -35,6 +35,15 @@ USTRUCT(BlueprintType)
 struct FTireInfo
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FVector localVelocity;
+	UPROPERTY(BlueprintReadOnly)
+	FVector localAcceleration;
+	UPROPERTY(BlueprintReadOnly)
+	float angularVelocity;
+	UPROPERTY(BlueprintReadOnly)
+	float angularAcceleration;
 	
 	UPROPERTY(BlueprintReadOnly)
 	float load;
@@ -51,6 +60,11 @@ struct FTireInfo
 
 	FTireInfo()
 	{
+		localVelocity = FVector::ZeroVector;
+		localAcceleration = FVector::ZeroVector;
+		angularVelocity = 0.0f;
+		angularAcceleration = 0.0f;
+		
 		load = 0.0f;
 		localLongitudinalForce = 0.0f;
 		localLateralForce = 0.0f;
@@ -66,6 +80,19 @@ struct FTireInfo
 	float ReturnLateralForceForCar()
 	{
 		return localLongitudinalForce * FMath::Sin(delta) + localLateralForce * FMath::Cos(delta);
+	}
+
+	void CalculateLocalVelocity(float xMultiplier, float yMultiplier, FVector carVelocity, float carYawAngularVelocity)
+	{
+		float xValue = carVelocity.X + xMultiplier * carYawAngularVelocity * trackWidth * 0.5f;
+		float yValue = offsetFromCentreOfMass * carYawAngularVelocity + yMultiplier * carVelocity.Y;
+		float zValue = localVelocity.Z;
+		localVelocity = FVector(xValue, yValue, zValue);
+	}
+	void ApplyAccelerations(float deltaTime)
+	{
+		localVelocity += localAcceleration * deltaTime;
+		angularVelocity += angularAcceleration * deltaTime;
 	}
 };
 
@@ -134,6 +161,11 @@ private:
 	float gradient = 0.0f; // vehicles pitch in radians (positive when the front is above the rear)
 	float bank = 0.0f; // vehicles roll in radians (positive when the left is above the right)
 	
+	FVector carVelocity;
+	FVector carAcceleration;
+	FVector carAngularVelocity;
+	FVector carAngularAcceleration;
+	
 	// Main body constants
 	const float mass = 1450.0f; // mass in Kg
 	const float centreOfMassHeight = 0.48f; // height of the centre of mass above the ground in meters
@@ -166,10 +198,14 @@ private:
 
 	// Tire functions
 	void InitialiseTireArray();
-	float CalculateLoadChangeFromLateralForce(float lateralForce, bool forFrontAxel);
+	float CalculateLoadChangeFromCorneringForce(float lateralForce, bool forFrontAxel);
 	float CalculateWheelLoadRatio();
+	void CalculateWheelsLocalVelocities();
 
 	// Car force functions
 	float CalculateResistanceForce();
 	FCarForces CalculateCarForces();
+
+	// Utility functions
+	void ApplyAllAccelerations(float deltaTime);
 };
