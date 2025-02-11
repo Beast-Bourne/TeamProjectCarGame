@@ -22,6 +22,38 @@ struct FWheelLoads
 	
 };
 
+UENUM(BlueprintType)
+enum class EWheelPosition : uint8
+{
+	FrontRight,
+	FrontLeft,
+	RearRight,
+	RearLeft
+};
+
+USTRUCT(BlueprintType)
+struct FTireInfo
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadOnly)
+	float load;
+	UPROPERTY(BlueprintReadOnly)
+	float longitudinalForce;
+	UPROPERTY(BlueprintReadOnly)
+	float lateralForce;
+	UPROPERTY(BlueprintReadOnly)
+	float delta; // The angle between the tires local forward direction and the cars forward direction
+
+	FTireInfo()
+	{
+		load = 0.0f;
+		longitudinalForce = 0.0f;
+		lateralForce = 0.0f;
+		delta = 0.0f;
+	}
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TEAMPROJECTCARGAME_API UCarForcesComponent : public UActorComponent
 {
@@ -43,8 +75,11 @@ public:
 	FWheelLoads CalculateStaticWheelLoads();
 
 	UFUNCTION(BlueprintCallable, Category="CarForces")
-	FWheelLoads CalculateSlopedWheelLoads(float bankAngle, float gradientAngle, float accel);
+	FWheelLoads CalculateWheelLoads(float bankAngle, float gradientAngle, float accel);
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="CarForces")
+	TMap<EWheelPosition, FTireInfo> TireMap;
+	
 	UPROPERTY(BlueprintReadOnly)
 	FWheelLoads wheelLoads; // loads on each tire in kg
 
@@ -94,7 +129,8 @@ private:
 	const float contactPatchLength = 0.1f; // m
 	const float slidingFrictionConstant = 0.7f; // for dry asphalt
 
-	// Tire load functions
+	// Tire functions
+	void InitialiseTireArray();
 	float CalculateLoadChangeFromLateralForce(float lateralForce, bool forFrontAxel);
 	float CalculateWheelLoadRatio();
 

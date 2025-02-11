@@ -15,6 +15,8 @@ UCarForcesComponent::UCarForcesComponent()
 	totalWheelLoadToCarWeightRatio = CalculateWheelLoadRatio();
 	longitudinalAcceleration = 0.0f;
 	lateralAcceleration = 0.0f;
+
+	InitialiseTireArray();
 }
 
 
@@ -30,6 +32,19 @@ void UCarForcesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
+
+void UCarForcesComponent::InitialiseTireArray()
+{
+	FTireInfo FRTireInfo;
+	FTireInfo FLTireInfo;
+	FTireInfo RRTireInfo;
+	FTireInfo RLTireInfo;
+	TireMap.Add(EWheelPosition::FrontRight, FRTireInfo);
+	TireMap.Add(EWheelPosition::FrontLeft, FLTireInfo);
+	TireMap.Add(EWheelPosition::RearRight, RRTireInfo);
+	TireMap.Add(EWheelPosition::RearLeft, RLTireInfo);
+}
+
 
 FWheelLoads UCarForcesComponent::CalculateStaticWheelLoads()
 {
@@ -62,7 +77,7 @@ float UCarForcesComponent::CalculateLoadChangeFromLateralForce(float lateralForc
 	return loadChange/g;
 }
 
-FWheelLoads UCarForcesComponent::CalculateSlopedWheelLoads(float bankAngle, float gradientAngle, float accel)
+FWheelLoads UCarForcesComponent::CalculateWheelLoads(float bankAngle, float gradientAngle, float accel)
 {
 	float frontLoadChange = CalculateLoadChangeFromLateralForce(mass*lateralAcceleration, true);
 	float rearLoadChange = CalculateLoadChangeFromLateralForce(mass*lateralAcceleration, false);
