@@ -17,18 +17,17 @@ public:
 	// Sets default values for this pawn's properties
 	AVehicle();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
-	UBoxComponent* BoxComponent;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Body")
+	UStaticMeshComponent* CarBody;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheels")
-	USceneComponent* FL_Wheels;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheels")
-	USceneComponent* FR_Wheels;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheels")
-	USceneComponent* RL_Wheels;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheels")
-	USceneComponent* RR_Wheels;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* FL_SuspensionMount;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* FR_SuspensionMount;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* RL_SuspensionMount;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* RR_SuspensionMount;
 
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
@@ -40,60 +39,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
 	UStaticMeshComponent* RR_WheelMeshes;
 
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* AccelerateInputAction;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* SteerInputAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float BaseTurningTorque{250000000};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float ZTorque{0};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MinTurningClamp{0};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MaxTurningClamp{10};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MaxZTorque{2000000};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MaxTurningSpeed{75};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MaxSteeringAngle{45};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MinSteeringAngle{25};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float Speed{};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float SuspensionForce{750000};
-
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float DefaultAccelerationMultiplier{};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float AccelerationMultiplier{8000};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float AccelerationInput{0};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float Acceleration{};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MinAccelerationLerp{0};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float MaxAccelerationLerp{50000};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	float AccelerationLerpAlpha{0.0};
-
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	bool bCanAccelerate{true};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	bool bIsTurning{false};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	bool bAirControl{false};
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Car Properties")
-	bool bIsSuspensionActive{false};
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Properties")
 	bool bDebugDraw{true};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float WheelRadius{ 50.0f };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float SuspensionLength{ 70.0f };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float Stiffness{ 1000.0f };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float Damping{ 3000.0f };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float RestLength{ 50.0f };
 
 protected:
 	// Called when the game starts or when spawned
@@ -106,25 +64,15 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void Accelerate(const FInputActionInstance& ActionValue);
-	UFUNCTION(BlueprintCallable, Category = "Steering")
-	void Steer(const FInputActionInstance& ActionValue);
-	void GroundCheck();
-	void CalculateAcceleration();
-	void AccelerateVehicle(USceneComponent* Wheel);
+	// Variables
+	FVector SuspensionForce;
+	float SuspensionMaxLength;
+	float SuspensionRayHitDistance;
+	float SuspensionCurrentLength{};
+	float SuspensionPreviousLength{};
+
 	void SuspensionCast(USceneComponent* Wheel);
 	void Debug();
-	void StopSteering();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
-
-	bool bGroundCheckResult{true};
-	bool bHasImpact = false;
-	float AccelerationInterpolationSpeed = 0.25;
-	float WheelInterpolationSpeed = 3.0;
-	float DecelerationInterpolationSpeed = 0.3;
-	float SuspensionCastInterpolationSpeed = 1.0;
-	float SteeringInputValue;
-	FVector StoredImpactPoint;
-	FTimerHandle LineTraceTimer;
 
 };
