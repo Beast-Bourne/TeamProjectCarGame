@@ -57,10 +57,13 @@ void AVehicle::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Suspension simulation
-	SuspensionCast(FL_Wheels);
-	SuspensionCast(FR_Wheels);
-	SuspensionCast(RL_Wheels);
-	SuspensionCast(RR_Wheels);
+	if (bIsSuspensionActive)
+	{
+		SuspensionCast(FL_Wheels);
+		SuspensionCast(FR_Wheels);
+		SuspensionCast(RL_Wheels);
+		SuspensionCast(RR_Wheels);
+	}
 
 	GroundCheck();
 	};
