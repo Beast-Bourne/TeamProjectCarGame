@@ -77,6 +77,9 @@ struct FTireInfo
 	float trackWidth; // width of the axel
 	float radius; // tire's radius
 
+	float momentOfInertia = 2.2f;
+	float angularAcceleration = 0.0f;
+
 	// default constructor
 	FTireInfo()
 	{
@@ -192,6 +195,11 @@ struct FTireInfo
 		float part2 = staticFrictionCoefficient * load * 9.81f / combinedSlipFactor;
 		return part1 * part2;
 	}
+
+	void CalculateAngularAccel(float drivingTorque, float brakingTorque)
+	{
+		angularAcceleration = (drivingTorque - brakingTorque - localLongitudinalForce * radius)/momentOfInertia;
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -211,6 +219,71 @@ struct FCarForces
 		longitudinalForce = 0.0f;
 		lateralForce = 0.0f;
 		angularForce = 0.0f;
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FEngineInfo
+{
+	GENERATED_BODY()
+
+	float engineAngularVelocity = 0.0f;
+	float engineRPM = 0.0f;
+	float engineMaxTorque = 0.0f;
+	float engineMinTorque = 0.0f;
+	float currentTorque;
+	float gearTransmissionRatio = 0.0f; // the ratio is 0 for neutral.
+	int currentGear = 0;
+	float finalGearRatio = 3.86f; // Hard coded for car being used (CHANGE LATER)
+	float  totalTransmissionRatio = 0.0f;
+	float engineMaxSpeed = 943.0f; // Hard coded for car being used (CHANGE LATER)
+	float engineMinSpeed = 89.0f; // Hard coded for car being used (CHANGE LATER)
+
+	float transmissionEfficiency = 0.0f;
+	float drivingTorquePerWheel = 0.0f;
+
+	void CalculateEngineTorqueRange()
+	{
+		engineMaxTorque = (2.1486f * FMath::Pow(10.0f, -6) * FMath::Pow(engineAngularVelocity, 3))
+		- (3.7390514f * FMath::Pow(10.0f, -6.0f) * engineAngularVelocity * engineAngularVelocity)
+		+ (1.8250297732f * engineAngularVelocity);
+
+		engineMinTorque = (2.152813f * FMath::Pow(10.0f, -4) * engineAngularVelocity * engineAngularVelocity)
+		- (0.2413794863f * engineAngularVelocity);
+	}
+
+	// hard coded gear ratio values (CHANGE THIS LATER)
+	void SwapGears(int newGear)
+	{
+		currentGear = newGear;
+		gearTransmissionRatio = (currentGear == 0)? 0.0f :
+		(currentGear == 1)? 3.92f:
+		(currentGear == 2)? 2.29f:
+		(currentGear == 3)? 1.55f:
+		(currentGear == 4)? 1.18f:
+		(currentGear == 5)? 0.94f:
+		0.79f;
+	}
+
+	void CalculateTotalGearRatio()
+	{
+		totalTransmissionRatio = (currentGear > 0) ? gearTransmissionRatio * finalGearRatio : 0.0f;
+	}
+
+	void CalculateEngineVelocity(float wheel1AngularVel, float wheel2AngularVel, float clutchInput, float throttleInput)
+	{
+		float intermediate = FMath::Max((wheel1AngularVel + wheel2AngularVel)/2.0f * totalTransmissionRatio, engineMinSpeed);
+
+		engineAngularVelocity = (totalTransmissionRatio == 0.0f || clutchInput > 0.5)? (engineMaxSpeed - (1-throttleInput)*(engineMaxSpeed-engineMinSpeed)): FMath::Min(intermediate, engineMaxSpeed);
+		engineRPM = engineAngularVelocity * 60.0f/(PI * 2.0f);
+	}
+
+	void CalculateEngineTorque(float clutchInput, float throttleInput, float carVelocity)
+	{
+		float intermediate = (clutchInput <= 0.5f)? (1-clutchInput) * throttleInput * (engineMaxTorque - engineMinTorque) + engineMaxTorque : 0.0f;
+		currentTorque = (carVelocity < 0.0f)? FMath::Max(0.0f, intermediate) : intermediate;
+
+		drivingTorquePerWheel = (currentTorque * transmissionEfficiency * totalTransmissionRatio)/2.0f * (FMath::Tanh(engineAngularVelocity-(engineMaxSpeed-3.0f))+1)/2.0f;
 	}
 };
 
