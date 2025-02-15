@@ -164,6 +164,7 @@ struct FTireInfo
 		localVelocity = FVector(xValue, yValue, zValue);
 	}
 
+	// slip multiplier is 1 for front wheels and -1 for rear wheels
 	void UpdateMemberVariables(float drivingTorque, float brakingTorque, float slipMultiplier)
 	{
 		slipVelocity = angularVelocity * radius;
@@ -181,6 +182,8 @@ struct FTireInfo
 		xSlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLongitudinalForce - xSlipFriction);
 		ySlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLateralForce - ySlipFriction);
 		selfAligningTorqueWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localSelfAligningTorque - selfAligningTorque);
+
+		UpdateForces();
 	}
 
 	float CalculateSlipFrictionFactor()
@@ -196,6 +199,13 @@ struct FTireInfo
 		return part1 * part2;
 	}
 
+	void UpdateForces()
+	{
+		localLongitudinalForce += xSlipForceWithRelaxation;
+		localLateralForce += ySlipForceWithRelaxation;
+		localSelfAligningTorque += selfAligningTorqueWithRelaxation;
+	}
+
 	void CalculateAngularAccel(float drivingTorque, float brakingTorque)
 	{
 		angularAcceleration = (drivingTorque - brakingTorque - localLongitudinalForce * radius)/momentOfInertia;
@@ -208,18 +218,11 @@ struct FCarForces
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	float longitudinalForce;
+	float longitudinalForce = 0.0f;
 	UPROPERTY(BlueprintReadOnly)
-	float lateralForce;
+	float lateralForce = 0.0f;
 	UPROPERTY(BlueprintReadOnly)
-	float angularForce;
-
-	FCarForces()
-	{
-		longitudinalForce = 0.0f;
-		lateralForce = 0.0f;
-		angularForce = 0.0f;
-	}
+	float angularForce = 0.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -227,11 +230,15 @@ struct FEngineInfo
 {
 	GENERATED_BODY()
 
+	UPROPERTY(BlueprintReadOnly)
 	float engineAngularVelocity = 0.0f;
 	float engineRPM = 0.0f;
 	float engineMaxTorque = 0.0f;
 	float engineMinTorque = 0.0f;
-	float currentTorque;
+
+	UPROPERTY(BlueprintReadOnly)
+	float currentTorque = 0.0f;
+	
 	float gearTransmissionRatio = 0.0f; // the ratio is 0 for neutral.
 	int currentGear = 0;
 	float finalGearRatio = 3.86f; // Hard coded for car being used (CHANGE LATER)
@@ -241,6 +248,15 @@ struct FEngineInfo
 
 	float transmissionEfficiency = 0.0f;
 	float drivingTorquePerWheel = 0.0f;
+
+	// initialises variables based on the car being stationary, turned on and in gear 1
+	FEngineInfo()
+	{
+		SwapGears(1);
+		CalculateTotalGearRatio();
+		CalculateEngineVelocity(0,0,0,0);
+		CalculateEngineTorqueRange();
+	}
 
 	void CalculateEngineTorqueRange()
 	{
@@ -317,6 +333,9 @@ public:
 	FWheelLoads wheelLoads; // loads on each tire in kg
 
 	UPROPERTY(BlueprintReadOnly)
+	FEngineInfo engineInfo;
+
+	UPROPERTY(BlueprintReadOnly)
 	float totalWheelLoadToCarWeightRatio;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -324,6 +343,18 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	float lateralAcceleration;
+
+	UPROPERTY(BlueprintReadWrite)
+	float clutchInput;
+
+	UPROPERTY(BlueprintReadWrite)
+	float throttleInput;
+
+	UPROPERTY(BlueprintReadOnly)
+	FVector carVelocity;
+
+	UPROPERTY(BlueprintReadOnly)
+	FVector carAcceleration;
 	
 private:
 	// non constants
@@ -332,8 +363,6 @@ private:
 	float gradient = 0.0f; // vehicles pitch in radians (positive when the front is above the rear)
 	float bank = 0.0f; // vehicles roll in radians (positive when the left is above the right)
 	
-	FVector carVelocity;
-	FVector carAcceleration;
 	FVector carAngularVelocity;
 	FVector carAngularAcceleration;
 	
@@ -379,4 +408,5 @@ private:
 
 	// Utility functions
 	void ApplyAllAccelerations(float deltaTime);
+	void PerformSimulationFrame(float deltaTime);
 };

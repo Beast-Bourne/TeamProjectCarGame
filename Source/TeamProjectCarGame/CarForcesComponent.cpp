@@ -21,6 +21,9 @@ UCarForcesComponent::UCarForcesComponent()
 	longitudinalAcceleration = 0.0f;
 	lateralAcceleration = 0.0f;
 
+	clutchInput = 0.75f;
+	throttleInput = 0.8f;
+
 	InitialiseTireArray();
 }
 
@@ -37,8 +40,7 @@ void UCarForcesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	CalculateWheelsLocalVelocities();
-	ApplyAllAccelerations(DeltaTime);
+	PerformSimulationFrame(DeltaTime);
 }
 
 void UCarForcesComponent::InitialiseTireArray()
@@ -88,8 +90,8 @@ float UCarForcesComponent::CalculateLoadChangeFromCorneringForce(float lateralFo
 
 FWheelLoads UCarForcesComponent::CalculateWheelLoads(float bankAngle, float gradientAngle, float accel)
 {
-	float frontLoadChange = CalculateLoadChangeFromCorneringForce(mass*lateralAcceleration, true);
-	float rearLoadChange = CalculateLoadChangeFromCorneringForce(mass*lateralAcceleration, false);
+	float frontLoadChange = CalculateLoadChangeFromCorneringForce(mass*carAcceleration.Y, true);
+	float rearLoadChange = CalculateLoadChangeFromCorneringForce(mass*carAcceleration.Y, false);
 	//                                                   load change from turning                                        load change from banking           load change from a gradient       load change from forward acceleration
 	wheelLoads.FrontRight = staticWheelLoads.FrontRight +frontLoadChange+ staticWheelLoads.FrontRight * centreOfMassHeight * ((2.0f*bankAngle/frontTrackWidth) - (gradientAngle/frontWheelOffset) - (accel/(g*frontWheelOffset)));
 	wheelLoads.FrontLeft = staticWheelLoads.FrontLeft -frontLoadChange+ staticWheelLoads.FrontLeft * centreOfMassHeight * (-2.0f*bankAngle/frontTrackWidth - gradientAngle/frontWheelOffset - accel/(g*frontWheelOffset));
@@ -159,14 +161,55 @@ FCarForces UCarForcesComponent::CalculateCarForces()
 	carForces.lateralForce = totalLateralForce;
 	carForces.angularForce = totalRotationalForce;
 
+	UE_LOG(LogTemp, Log, TEXT("longitudinal force on car: %f"), totalLongitudinalForce);
+
 	return carForces;
 }
 
 void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 {
 	carVelocity += carAcceleration * deltaTime;
-	carAngularVelocity += carAngularVelocity * deltaTime;
+	carAngularVelocity += carAngularAcceleration * deltaTime;
 }
+
+void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
+{
+	engineInfo.CalculateEngineVelocity(TireMap[EWheelPosition::RearRight].angularVelocity, TireMap[EWheelPosition::RearLeft].angularVelocity, clutchInput, throttleInput);
+	engineInfo.CalculateEngineTorque(clutchInput, throttleInput, velocity);
+
+	FTireInfo &tireFR = TireMap[EWheelPosition::FrontRight];
+	FTireInfo &tireFL = TireMap[EWheelPosition::FrontLeft];
+	FTireInfo &tireRR = TireMap[EWheelPosition::RearRight];
+	FTireInfo &tireRL = TireMap[EWheelPosition::RearLeft];
+	
+	tireFR.CalculateAngularAccel(0.0f, 0.0f);
+	tireFL.CalculateAngularAccel(0.0f, 0.0f);
+	tireRR.CalculateAngularAccel(engineInfo.drivingTorquePerWheel, 0.0f);
+	tireRL.CalculateAngularAccel(engineInfo.drivingTorquePerWheel, 0.0f);
+
+	FWheelLoads loads = CalculateWheelLoads(0.0f, 0.0f, carAcceleration.X);
+	tireFR.load = loads.FrontRight;
+	tireFL.load = loads.FrontLeft;
+	tireRR.load = loads.RearRight;
+	tireRL.load = loads.RearLeft;
+
+	tireFR.CalculateLocalVelocity(-1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
+	tireFL.CalculateLocalVelocity(1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
+	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
+	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
+	
+	tireFR.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
+	tireFL.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
+	tireRR.UpdateMemberVariables(engineInfo.drivingTorquePerWheel, 0.0f, -1.0f);
+	tireRL.UpdateMemberVariables(engineInfo.drivingTorquePerWheel, 0.0f, -1.0f);
+
+	FCarForces forces = CalculateCarForces();
+	carAcceleration = FVector(forces.longitudinalForce/mass, forces.lateralForce/mass, 0.0f);
+	carAngularAcceleration = FVector(0.0f, 0.0f, forces.angularForce/mass);
+
+	ApplyAllAccelerations(deltaTime);
+}
+
 
 
 
