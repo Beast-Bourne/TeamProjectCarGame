@@ -41,12 +41,31 @@ AVehicle::AVehicle()
 
 }
 
-// Called when the game starts or when spawned
 void AVehicle::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Dynamically calculate the wheel radius for each wheel
+	float FL_Radius = GetWheelRadius(FL_WheelMeshes);
+	float FR_Radius = GetWheelRadius(FR_WheelMeshes);
+	float RL_Radius = GetWheelRadius(RL_WheelMeshes);
+	float RR_Radius = GetWheelRadius(RR_WheelMeshes);
+
+	// Average all wheel radii (or handle per-axle adjustments)
+	WheelRadius = (FL_Radius + FR_Radius + RL_Radius + RR_Radius) / 4.0f;
+
+	// Set suspension length dynamically (Example: 1.5x Wheel Radius)
+	SuspensionLength = WheelRadius * 1.25f;
+
+	// Set the max suspension travel length
 	SuspensionMaxLength = WheelRadius + SuspensionLength;
+
+	// Debug Output
+	FString DebugMessage = FString::Printf(TEXT("Wheel Radius: %f | Suspension Length: %f"), WheelRadius, SuspensionLength);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan, DebugMessage);
 }
+
+
 
 // Called every frame
 void AVehicle::Tick(float DeltaTime)
@@ -54,36 +73,47 @@ void AVehicle::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Suspension simulation
-	SuspensionCast(FL_SuspensionMount);
-	SuspensionCast(FR_SuspensionMount);
-	SuspensionCast(RL_SuspensionMount);
-	SuspensionCast(RR_SuspensionMount);
+	SuspensionCast(FL_SuspensionMount, FL_WheelMeshes);
+	SuspensionCast(FR_SuspensionMount, FR_WheelMeshes);
+	SuspensionCast(RL_SuspensionMount, RL_WheelMeshes);
+	SuspensionCast(RR_SuspensionMount, RR_WheelMeshes);
 	};
 
 // Function to manage how the car reacts to elevation changes
-void AVehicle::SuspensionCast(USceneComponent* Wheel)
+void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh)
 {
-    float DeltaTime = GetWorld()->GetDeltaSeconds();
+	
+	float DeltaTime = GetWorld()->GetDeltaSeconds();
+	FHitResult HitResult;
+	WheelRadius = GetWheelRadius(WheelMesh);
 
-    // Line traces to calculate position of the wheel
-    FHitResult HitResult;
+	// Define the start and end points for the sweep trace
+	FVector StartTrace = Wheel->GetComponentLocation();
+	FVector EndTrace = StartTrace + (Wheel->GetUpVector() * -SuspensionMaxLength);
 
-    // Start trace begins at the Suspension Mount
-    FVector StartTrace = Wheel->GetComponentLocation();
-    FVector EndTrace = Wheel->GetComponentLocation() + (Wheel->GetUpVector() * -SuspensionMaxLength);
-    bool bHit = LineTrace(StartTrace, EndTrace, HitResult, bDebugDraw);
-	SuspensionCurrentLength = HitResult.Distance - WheelRadius;
+	// Use sweep trace instead of line trace
+	bool bHit = SweepTrace(StartTrace, EndTrace, HitResult, bDebugDraw);
 
-	SuspensionForce = FVector(0, 0, (Stiffness * (RestLength - SuspensionCurrentLength) + (Damping) * (SuspensionPreviousLength - SuspensionCurrentLength) / DeltaTime));
-    if (bHit)
-    {
-		FString VectorString = SuspensionForce.ToString();
+	// Compute suspension length
+	SuspensionCurrentLength = bHit ? (HitResult.Distance - WheelRadius) : SuspensionMaxLength;
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, VectorString);
+	// Calculate suspension force
+	SuspensionForce = FVector(0, 0, (Stiffness * (RestLength - SuspensionCurrentLength) +
+									(Damping * (SuspensionPreviousLength - SuspensionCurrentLength) / FMath::Max(DeltaTime, KINDA_SMALL_NUMBER))));
+
+	// Apply force if hit
+	if (bHit)
+	{
+		FString DebugMessage = FString::Printf(TEXT("Suspension Force: %s | Length: %f"), *SuspensionForce.ToString(), SuspensionCurrentLength);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, DebugMessage);
+
+		float WheelZValue = HitResult.ImpactNormal.Z - WheelRadius;
+		WheelMesh->SetRelativeLocation(FVector(0,0, (WheelZValue)));
 		CarBody->AddForceAtLocation(SuspensionForce, HitResult.ImpactPoint);
 		SuspensionPreviousLength = SuspensionCurrentLength;
-    }
+	}
 }
+
 
 
 // Function which handles how the debug options are being drawn/displayed
@@ -122,6 +152,41 @@ bool AVehicle::LineTrace(FVector StartLocation, FVector EndLocation, FHitResult&
 	
 }
 
+bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const
+{
+	// Define a sphere radius (should be smaller than or equal to the wheel radius)
+	float SweepRadius = WheelRadius * 0.9f;  // Slightly smaller to avoid instant ground contact
+
+	// Collision query parameters
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
+
+	// Define the shape of the sweep (sphere)
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(SweepRadius);
+
+	// Perform the sweep trace
+	bool bHit = GetWorld()->SweepSingleByChannel(
+		OutHitResult, 
+		StartLocation, 
+		EndLocation, 
+		FQuat::Identity,  // No rotation for a sphere
+		ECC_Visibility, 
+		Sphere, 
+		CollisionParams
+	);
+
+	// Debug visualization
+	if (bDrawDebug)
+	{
+		DrawDebugSphere(GetWorld(), OutHitResult.Location, SweepRadius, 12, bHit ? FColor::Green : FColor::Red, false, 1.0f);
+		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Blue, false, 1.0f, 0, 1.0f);
+	}
+
+	return bHit;
+}
+
+
+
 // Called to bind functionality to input
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -129,4 +194,16 @@ void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	
 	UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 }
+
+float AVehicle::GetWheelRadius(UStaticMeshComponent* WheelMesh)
+{
+	if (!WheelMesh || !WheelMesh->GetStaticMesh()) return 0.0f;  // Safety check
+
+	// Get the bounding box of the mesh
+	FVector BoxExtent = WheelMesh->GetStaticMesh()->GetBoundingBox().GetExtent();
+
+	// The radius is half the height (Z-axis extent)
+	return BoxExtent.Z;
+}
+
 

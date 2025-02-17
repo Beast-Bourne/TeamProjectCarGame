@@ -40,7 +40,7 @@ public:
 	UStaticMeshComponent* RR_WheelMeshes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Properties")
-	bool bDebugDraw{true};
+	bool bDebugDraw{false};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	float WheelRadius{ 50.0f };
@@ -63,6 +63,7 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	float GetWheelRadius(UStaticMeshComponent* WheelMesh);
 
 	// Variables
 	FVector SuspensionForce;
@@ -71,8 +72,9 @@ public:
 	float SuspensionCurrentLength{};
 	float SuspensionPreviousLength{};
 
-	void SuspensionCast(USceneComponent* Wheel);
+	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
 	void Debug();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
+	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
 
 };
