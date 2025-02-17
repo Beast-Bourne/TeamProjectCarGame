@@ -7,20 +7,12 @@
 #include "Math/UnrealMathUtility.h"
 #include "CarForcesComponent.generated.h"
 
-USTRUCT(BlueprintType)
 struct FWheelLoads
 {
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
 	float FrontRight;
-	UPROPERTY(BlueprintReadOnly)
 	float FrontLeft;
-	UPROPERTY(BlueprintReadOnly)
 	float RearRight;
-	UPROPERTY(BlueprintReadOnly)
 	float RearLeft;
-	
 };
 
 UENUM(BlueprintType)
@@ -36,107 +28,53 @@ USTRUCT(BlueprintType)
 struct FTireInfo
 {
 	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
-	FVector localVelocity;             // velocity of the tire relative to the ground
-	UPROPERTY(BlueprintReadOnly)
-	float angularVelocity;             // angular velocity of the tire
-	UPROPERTY(BlueprintReadOnly)
-	float slipVelocity;                // velocity of the tire in a no-slip condition
-	UPROPERTY(BlueprintReadOnly)
-	float longitudinalSlipFactor;      // slip of the tire in the longitudinal direction
-	UPROPERTY(BlueprintReadOnly)
-	float lateralSlipFactor;           // slip of the tire in the lateral direction
-	UPROPERTY(BlueprintReadOnly)
-	float combinedSlipFactor;          // slip factor used for determining conditions for calculating slip forces
-	UPROPERTY(BlueprintReadOnly)
-	float slipConditionFactor;         // factor used for checking if the tire is working in linear or sliding conditions
-	UPROPERTY(BlueprintReadOnly)
-	float threadStiffness;
-	UPROPERTY(BlueprintReadOnly)
-	float staticFrictionCoefficient;
-	float slidingFrictionCoefficient;
-	float xSlipFriction;
-	float ySlipFriction;
-	float patchLength;
-	float selfAligningTorque;
-	float casterOffset;
-	float relaxationConstant;
-
-	float xSlipForceWithRelaxation;
-	float ySlipForceWithRelaxation;
-	float selfAligningTorqueWithRelaxation;
 	
-	
-	float load; // normal force acting on the tire in kg
-	float localLongitudinalForce;
-	float localLateralForce;
-	float localSelfAligningTorque;
-	float delta; // The angle between the tires local forward direction and the cars forward direction
-	float offsetFromCentreOfMass; // offset (in x-axis) between the wheel and the car's CoM
-	float trackWidth; // width of the axel
-	float radius; // tire's radius
+	FVector localVelocity = FVector::ZeroVector;             // velocity of the tire relative to the ground
+	float angularVelocity = 0.0f;                            // angular velocity of the tire
+	float slipVelocity = 0.0f;                               // velocity of the tire in a no-slip condition
+	float longitudinalSlipFactor = 0.0f;                     // slip of the tire in the longitudinal direction
+	float lateralSlipFactor = 0.0f;                          // slip of the tire in the lateral direction
+	float combinedSlipFactor= 0.0f;          // slip factor used for determining conditions for calculating slip forces
+	float slipConditionFactor = 0.0f;         // factor used for checking if the tire is working in linear or sliding conditions
+	float threadStiffness = 0.0f;
+	float staticFrictionCoefficient = 0.7f;
+	float slidingFrictionCoefficient = 0.5f;
+	float xSlipFriction = 0.0f;
+	float ySlipFriction = 0.0f;
+	float patchLength = 0.0f;
+	float selfAligningTorque = 0.0f;
+	float casterOffset = 0.0f;
+	float relaxationConstant = 0.0f;
 
-	float momentOfInertia = 2.2f;
+	float xSlipForceWithRelaxation = 0.0f;
+	float ySlipForceWithRelaxation = 0.0f;
+	float selfAligningTorqueWithRelaxation = 0.0f;
+	
+	UPROPERTY(BlueprintReadOnly)
+	float load = 0.0f; // normal force acting on the tire in kg
+	UPROPERTY(BlueprintReadOnly)
+	float localLongitudinalForce = 0.0f;
+	UPROPERTY(BlueprintReadOnly)
+	float localLateralForce = 0.0f;
+	float localSelfAligningTorque = 0.0f;
+	float delta = 0.0f; // The angle between the tires local forward direction and the cars forward direction
+	float offsetFromCentreOfMass = 0.0f; // offset (in x-axis) between the wheel and the car's CoM
+	float trackWidth = 0.0f; // width of the axel
+	float radius = 0.0f; // tire's radius
+
+	float momentOfInertia = 2.2f; // hard coded (CHANGE LATER)
 	float angularAcceleration = 0.0f;
 
 	// default constructor
 	FTireInfo()
 	{
-		localVelocity = FVector::ZeroVector;
-		angularVelocity = 0;
-		slipVelocity = 0;
-		longitudinalSlipFactor = 0;
-		lateralSlipFactor = 0;
-		combinedSlipFactor = 0;
-		slipConditionFactor = 0;
-		threadStiffness = 0;
-		staticFrictionCoefficient = 0;
-		slidingFrictionCoefficient = 0;
-		xSlipFriction = 0;
-		ySlipFriction = 0;
-		patchLength = 0;
-		selfAligningTorque = 0;
-		casterOffset = 0;
-		relaxationConstant = 0;
-		xSlipForceWithRelaxation = 0;
-		ySlipForceWithRelaxation = 0;
-		selfAligningTorqueWithRelaxation = 0;
-
-		load = 0;
-		localLongitudinalForce = 0;
-		localLateralForce = 0;
-		localSelfAligningTorque = 0;
-		delta = 0;
-		offsetFromCentreOfMass = 0;
-		trackWidth = 0;
-		radius = 0;
+		
 	}
-
+	
 	// main constructor
 	FTireInfo(float load, float offset, float trackWidth, float radius, float threadStiffness, float patchLength, float casterOffset, float relaxationConstant)
 	{
-		localVelocity = FVector::ZeroVector;
-		angularVelocity = 0.0f;
-		slipVelocity = 0.0f;
-		longitudinalSlipFactor = 0.0f;
-		lateralSlipFactor = 0.0f;
-		combinedSlipFactor = 0.0f;
-		slipConditionFactor = 0.0f;
-		staticFrictionCoefficient = 1.0f;
-		slidingFrictionCoefficient = 1.0f;
-		xSlipFriction = 0.0f;
-		ySlipFriction = 0.0f;
-		selfAligningTorque = 0.0f;
-		xSlipForceWithRelaxation = 0.0f;
-		ySlipForceWithRelaxation = 0.0f;
-		selfAligningTorqueWithRelaxation = 0.0f;
-		
 		this->load = load;
-		localLongitudinalForce = 0.0f;
-		localLateralForce = 0.0f;
-		localSelfAligningTorque = 0.0f;
-		delta = 0.0f;
 		this->offsetFromCentreOfMass = offset;
 		this->trackWidth = trackWidth;
 		this->radius = radius;
@@ -158,7 +96,7 @@ struct FTireInfo
 	// sets the local velocity of this tire to the cars velocity and corrects it for any angular velocity about the yaw of the car
 	void CalculateLocalVelocity(float xMultiplier, float yMultiplier, const FVector &carVelocity, float carYawAngularVelocity)
 	{
-		float xValue = carVelocity.X + xMultiplier * carYawAngularVelocity * trackWidth * 0.5f;
+		float xValue = carVelocity.X + (xMultiplier * carYawAngularVelocity * trackWidth * 0.5f);
 		float yValue = offsetFromCentreOfMass * carYawAngularVelocity + yMultiplier * carVelocity.Y;
 		float zValue = localVelocity.Z;
 		localVelocity = FVector(xValue, yValue, zValue);
@@ -169,12 +107,14 @@ struct FTireInfo
 	{
 		slipVelocity = angularVelocity * radius;
 		longitudinalSlipFactor = (slipVelocity -localVelocity.X)/FMath::Max(slipVelocity, 1.0f);
-		float slipFunction = (FMath::Tanh(10 * localVelocity.X -8.0f)+1.0f)/2.0f;
+		float slipFunction = (FMath::Tanh(10 * localVelocity.X -8.0f)+1.0f)/2.0f; // evaluates at 0 when velocity.X = 0
 		lateralSlipFactor = slipFunction * slipMultiplier * (delta - localVelocity.Y/FMath::Max(slipVelocity, 1.0f));
 		combinedSlipFactor = FMath::Sqrt(longitudinalSlipFactor * longitudinalSlipFactor + lateralSlipFactor * lateralSlipFactor);
+		UE_LOG(LogTemp, Log, TEXT("slip factor: %f"), combinedSlipFactor);
 		slipConditionFactor = threadStiffness/(3*staticFrictionCoefficient) * combinedSlipFactor;
 
 		float slipFrictionFactor = CalculateSlipFrictionFactor();
+		UE_LOG(LogTemp, Log, TEXT("slip friction factor: %f"), slipFrictionFactor);
 		xSlipFriction = slipFrictionFactor * longitudinalSlipFactor;
 		ySlipFriction = slipFrictionFactor * lateralSlipFactor;
 		selfAligningTorque = (-patchLength*threadStiffness*lateralSlipFactor)/3.0f * FMath::Square(FMath::Min(0, slipConditionFactor-1.0f)) * (7*slipConditionFactor -1.0f) * load * 9.81f - (casterOffset * slipFrictionFactor * lateralSlipFactor);
@@ -201,14 +141,22 @@ struct FTireInfo
 
 	void UpdateForces()
 	{
-		localLongitudinalForce += xSlipForceWithRelaxation;
-		localLateralForce += ySlipForceWithRelaxation;
-		localSelfAligningTorque += selfAligningTorqueWithRelaxation;
+		localLongitudinalForce = xSlipForceWithRelaxation;
+		localLateralForce = ySlipForceWithRelaxation;
+		localSelfAligningTorque = selfAligningTorqueWithRelaxation;
 	}
 
 	void CalculateAngularAccel(float drivingTorque, float brakingTorque)
 	{
-		angularAcceleration = (drivingTorque - brakingTorque - localLongitudinalForce * radius)/momentOfInertia;
+		angularAcceleration = (drivingTorque - brakingTorque - (localLongitudinalForce * radius))/momentOfInertia;
+		UE_LOG(LogTemp, Log, TEXT("driving Torque: %f"), drivingTorque);
+		UE_LOG(LogTemp, Log, TEXT("long force torque: %f"), localLongitudinalForce*radius);
+		UE_LOG(LogTemp, Log, TEXT("wheel spin accel: %f"), angularAcceleration);
+	}
+
+	void ApplyAngularAccel(float deltaTime)
+	{
+		angularVelocity += deltaTime * angularAcceleration;
 	}
 };
 
@@ -240,20 +188,22 @@ struct FEngineInfo
 	float currentTorque = 0.0f;
 	
 	float gearTransmissionRatio = 0.0f; // the ratio is 0 for neutral.
+	UPROPERTY(BlueprintReadOnly)
 	int currentGear = 0;
 	float finalGearRatio = 3.86f; // Hard coded for car being used (CHANGE LATER)
 	float  totalTransmissionRatio = 0.0f;
 	float engineMaxSpeed = 943.0f; // Hard coded for car being used (CHANGE LATER)
 	float engineMinSpeed = 89.0f; // Hard coded for car being used (CHANGE LATER)
 
-	float transmissionEfficiency = 0.0f;
+	float transmissionEfficiency = 0.97f;
+
+	UPROPERTY(BlueprintReadOnly)
 	float drivingTorquePerWheel = 0.0f;
 
 	// initialises variables based on the car being stationary, turned on and in gear 1
 	FEngineInfo()
 	{
-		SwapGears(1);
-		CalculateTotalGearRatio();
+		SwapGears(0);
 		CalculateEngineVelocity(0,0,0,0);
 		CalculateEngineTorqueRange();
 	}
@@ -279,6 +229,8 @@ struct FEngineInfo
 		(currentGear == 4)? 1.18f:
 		(currentGear == 5)? 0.94f:
 		0.79f;
+
+		CalculateTotalGearRatio();
 	}
 
 	void CalculateTotalGearRatio()
@@ -286,6 +238,7 @@ struct FEngineInfo
 		totalTransmissionRatio = (currentGear > 0) ? gearTransmissionRatio * finalGearRatio : 0.0f;
 	}
 
+	// calculates the engine's angular velocity (and RPM) based on the clutch/throttle inputs
 	void CalculateEngineVelocity(float wheel1AngularVel, float wheel2AngularVel, float clutchInput, float throttleInput)
 	{
 		float intermediate = FMath::Max((wheel1AngularVel + wheel2AngularVel)/2.0f * totalTransmissionRatio, engineMinSpeed);
@@ -294,12 +247,15 @@ struct FEngineInfo
 		engineRPM = engineAngularVelocity * 60.0f/(PI * 2.0f);
 	}
 
+	// calculates the torque produced by the engine and the torque applied to each wheel
+	// the intermediate stores the calculation of the torque value
+	// the currentTorque is then set based on some conditions. No torque is provided to the wheels when the clutch is pressed (>0.5) or when the cars in neutral
 	void CalculateEngineTorque(float clutchInput, float throttleInput, float carVelocity)
 	{
 		float intermediate = (clutchInput <= 0.5f)? (1-clutchInput) * throttleInput * (engineMaxTorque - engineMinTorque) + engineMaxTorque : 0.0f;
 		currentTorque = (carVelocity < 0.0f)? FMath::Max(0.0f, intermediate) : intermediate;
 
-		drivingTorquePerWheel = (currentTorque * transmissionEfficiency * totalTransmissionRatio)/2.0f * (FMath::Tanh(engineAngularVelocity-(engineMaxSpeed-3.0f))+1)/2.0f;
+		drivingTorquePerWheel = (currentTorque * transmissionEfficiency * totalTransmissionRatio)/2.0f * -(FMath::Tanh(engineAngularVelocity-(engineMaxSpeed-3.0f))-1)/2.0f;
 	}
 };
 
@@ -320,17 +276,16 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION(BlueprintCallable, Category="CarForces")
-	FWheelLoads CalculateStaticWheelLoads();
+	void CalculateWheelLoads(float bankAngle, float gradientAngle, float accel);
 
-	UFUNCTION(BlueprintCallable, Category="CarForces")
-	FWheelLoads CalculateWheelLoads(float bankAngle, float gradientAngle, float accel);
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="CarForces")
-	TMap<EWheelPosition, FTireInfo> TireMap;
-	
-	UPROPERTY(BlueprintReadOnly)
-	FWheelLoads wheelLoads; // loads on each tire in kg
+	UPROPERTY(BlueprintReadOnly, category="CarForces")
+	FTireInfo tireFR;
+	UPROPERTY(BlueprintReadOnly, category="CarForces")
+	FTireInfo tireFL;
+	UPROPERTY(BlueprintReadOnly, category="CarForces")
+	FTireInfo tireRR;
+	UPROPERTY(BlueprintReadOnly, category="CarForces")
+	FTireInfo tireRL;
 
 	UPROPERTY(BlueprintReadOnly)
 	FEngineInfo engineInfo;
@@ -355,6 +310,12 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	FVector carAcceleration;
+
+	// functions for testing purposes
+	UFUNCTION(BlueprintCallable)
+	void ChangeGear(int gear);
+	UFUNCTION(BlueprintCallable)
+	void PerformSimulationFrame(float deltaTime);
 	
 private:
 	// non constants
@@ -397,10 +358,10 @@ private:
 	const float slidingFrictionConstant = 0.7f; // for dry asphalt
 
 	// Tire functions
-	void InitialiseTireArray();
 	float CalculateLoadChangeFromCorneringForce(float lateralForce, bool forFrontAxel);
 	float CalculateWheelLoadRatio();
 	void CalculateWheelsLocalVelocities();
+	FWheelLoads CalculateStaticWheelLoads();
 
 	// Car force functions
 	float CalculateResistanceForce();
@@ -408,5 +369,4 @@ private:
 
 	// Utility functions
 	void ApplyAllAccelerations(float deltaTime);
-	void PerformSimulationFrame(float deltaTime);
 };
