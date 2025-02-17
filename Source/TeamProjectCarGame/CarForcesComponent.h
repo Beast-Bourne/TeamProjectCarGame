@@ -30,6 +30,7 @@ struct FTireInfo
 	GENERATED_BODY()
 	
 	FVector localVelocity = FVector::ZeroVector;             // velocity of the tire relative to the ground
+	UPROPERTY(BlueprintReadOnly)
 	float angularVelocity = 0.0f;                            // angular velocity of the tire
 	float slipVelocity = 0.0f;                               // velocity of the tire in a no-slip condition
 	float longitudinalSlipFactor = 0.0f;                     // slip of the tire in the longitudinal direction
@@ -110,11 +111,9 @@ struct FTireInfo
 		float slipFunction = (FMath::Tanh(10 * localVelocity.X -8.0f)+1.0f)/2.0f; // evaluates at 0 when velocity.X = 0
 		lateralSlipFactor = slipFunction * slipMultiplier * (delta - localVelocity.Y/FMath::Max(slipVelocity, 1.0f));
 		combinedSlipFactor = FMath::Sqrt(longitudinalSlipFactor * longitudinalSlipFactor + lateralSlipFactor * lateralSlipFactor);
-		UE_LOG(LogTemp, Log, TEXT("slip factor: %f"), combinedSlipFactor);
 		slipConditionFactor = threadStiffness/(3*staticFrictionCoefficient) * combinedSlipFactor;
 
 		float slipFrictionFactor = CalculateSlipFrictionFactor();
-		UE_LOG(LogTemp, Log, TEXT("slip friction factor: %f"), slipFrictionFactor);
 		xSlipFriction = slipFrictionFactor * longitudinalSlipFactor;
 		ySlipFriction = slipFrictionFactor * lateralSlipFactor;
 		selfAligningTorque = (-patchLength*threadStiffness*lateralSlipFactor)/3.0f * FMath::Square(FMath::Min(0, slipConditionFactor-1.0f)) * (7*slipConditionFactor -1.0f) * load * 9.81f - (casterOffset * slipFrictionFactor * lateralSlipFactor);
@@ -123,6 +122,10 @@ struct FTireInfo
 		ySlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLateralForce - ySlipFriction);
 		selfAligningTorqueWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localSelfAligningTorque - selfAligningTorque);
 
+
+		xSlipForceWithRelaxation = (1450.0f * radius * drivingTorque * radius)/(momentOfInertia + 1450*radius*radius);
+		ySlipForceWithRelaxation = 0.0f;
+		
 		UpdateForces();
 	}
 
@@ -144,14 +147,13 @@ struct FTireInfo
 		localLongitudinalForce = xSlipForceWithRelaxation;
 		localLateralForce = ySlipForceWithRelaxation;
 		localSelfAligningTorque = selfAligningTorqueWithRelaxation;
+
+		localLongitudinalForce = FMath::Clamp(localLongitudinalForce, -staticFrictionCoefficient*load, staticFrictionCoefficient*load);
 	}
 
-	void CalculateAngularAccel(float drivingTorque, float brakingTorque)
+	void CalculateAngularAccel(float drivingTorque, float brakingTorque, float rollResist, float drag, float slope)
 	{
-		angularAcceleration = (drivingTorque - brakingTorque - (localLongitudinalForce * radius))/momentOfInertia;
-		UE_LOG(LogTemp, Log, TEXT("driving Torque: %f"), drivingTorque);
-		UE_LOG(LogTemp, Log, TEXT("long force torque: %f"), localLongitudinalForce*radius);
-		UE_LOG(LogTemp, Log, TEXT("wheel spin accel: %f"), angularAcceleration);
+		angularAcceleration = (drivingTorque - brakingTorque + ((rollResist + drag + slope) * radius))/momentOfInertia;
 	}
 
 	void ApplyAngularAccel(float deltaTime)
@@ -181,7 +183,10 @@ struct FEngineInfo
 	UPROPERTY(BlueprintReadOnly)
 	float engineAngularVelocity = 0.0f;
 	float engineRPM = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly)
 	float engineMaxTorque = 0.0f;
+	UPROPERTY(BlueprintReadOnly)
 	float engineMinTorque = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly)
