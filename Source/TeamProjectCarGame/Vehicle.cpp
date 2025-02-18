@@ -15,10 +15,15 @@ AVehicle::AVehicle()
 	CarBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Car Body"));
 
 	// Wheel Scene Components for suspension calculations
-	FL_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("FL_Wheels"));
-	FR_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("FR_Wheels"));
-	RL_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("RL_Wheels"));
-	RR_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("RR_Wheels"));
+	FL_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("FL_Suspension"));
+	FR_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("FR_Suspension"));
+	RL_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("RL_Suspension"));
+	RR_SuspensionMount = CreateDefaultSubobject<USceneComponent>(TEXT("RR_Suspension"));
+	
+	FL_SuspensionRest = CreateDefaultSubobject<USceneComponent>(TEXT("FL_SuspensionRest"));
+	FR_SuspensionRest = CreateDefaultSubobject<USceneComponent>(TEXT("FR_SuspensionRest"));
+	RL_SuspensionRest = CreateDefaultSubobject<USceneComponent>(TEXT("RL_SuspensionRest"));
+	RR_SuspensionRest = CreateDefaultSubobject<USceneComponent>(TEXT("RR_SuspensionRest"));
 
 	// Meshes used to dynamically display wheel's current location
 	FL_WheelMeshes = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FL_WheelMesh"));
@@ -33,6 +38,11 @@ AVehicle::AVehicle()
 	RL_SuspensionMount->SetupAttachment(RootComponent);
 	RR_SuspensionMount->SetupAttachment(RootComponent);
 
+	FL_SuspensionRest->SetupAttachment(FL_SuspensionMount);
+	FR_SuspensionRest->SetupAttachment(FR_SuspensionMount);
+	RL_SuspensionRest->SetupAttachment(RL_SuspensionMount);
+	RR_SuspensionRest->SetupAttachment(RR_SuspensionMount);
+	
 	// Attach the Static Meshes to the Scene Components
 	FL_WheelMeshes->SetupAttachment(FL_SuspensionMount);
 	FR_WheelMeshes->SetupAttachment(FR_SuspensionMount);
@@ -45,24 +55,8 @@ void AVehicle::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Dynamically calculate the wheel radius for each wheel
-	float FL_Radius = GetWheelRadius(FL_WheelMeshes);
-	float FR_Radius = GetWheelRadius(FR_WheelMeshes);
-	float RL_Radius = GetWheelRadius(RL_WheelMeshes);
-	float RR_Radius = GetWheelRadius(RR_WheelMeshes);
-
-	// Average all wheel radii (or handle per-axle adjustments)
-	WheelRadius = (FL_Radius + FR_Radius + RL_Radius + RR_Radius) / 4.0f;
-
-	// Set suspension length dynamically (Example: 1.5x Wheel Radius)
-	SuspensionLength = WheelRadius * 1.25f;
-
 	// Set the max suspension travel length
-	SuspensionMaxLength = WheelRadius + SuspensionLength;
-
-	// Debug Output
-	FString DebugMessage = FString::Printf(TEXT("Wheel Radius: %f | Suspension Length: %f"), WheelRadius, SuspensionLength);
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan, DebugMessage);
+	SuspensionMaxLength = WheelRadius + SuspensionRestDistance;
 }
 
 
@@ -73,14 +67,14 @@ void AVehicle::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Suspension simulation
-	SuspensionCast(FL_SuspensionMount, FL_WheelMeshes);
-	SuspensionCast(FR_SuspensionMount, FR_WheelMeshes);
-	SuspensionCast(RL_SuspensionMount, RL_WheelMeshes);
-	SuspensionCast(RR_SuspensionMount, RR_WheelMeshes);
+	SuspensionCast(FL_SuspensionMount, FL_WheelMeshes, FL_SuspensionRest);
+	SuspensionCast(FR_SuspensionMount, FR_WheelMeshes, FR_SuspensionRest);
+	SuspensionCast(RL_SuspensionMount, RL_WheelMeshes, RL_SuspensionRest);
+	SuspensionCast(RR_SuspensionMount, RR_WheelMeshes, RR_SuspensionRest);
 	};
 
 // Function to manage how the car reacts to elevation changes
-void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh)
+void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest)
 {
 	
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
@@ -97,19 +91,29 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	// Compute suspension length
 	SuspensionCurrentLength = bHit ? (HitResult.Distance - WheelRadius) : SuspensionMaxLength;
 
+	SpringDirection = Wheel->GetUpVector();
+
+	TireVelocity = CarBody->GetPhysicsLinearVelocityAtPoint(Wheel->GetComponentLocation());
+
+	SuspensionRestDistance = Wheel->GetComponentLocation().Z - SuspensionRest->GetComponentLocation().Z;
+
+	float Offset = SuspensionRestDistance - HitResult.Distance;
+	
+	float Velocity = FVector::DotProduct(SpringDirection, TireVelocity);
+
+
 	// Calculate suspension force
-	SuspensionForce = FVector(0, 0, (Stiffness * (RestLength - SuspensionCurrentLength) +
-									(Damping * (SuspensionPreviousLength - SuspensionCurrentLength) / FMath::Max(DeltaTime, KINDA_SMALL_NUMBER))));
+	SuspensionForce = (Offset * SuspensionStrength) - (Velocity * Damper);
 
 	// Apply force if hit
 	if (bHit)
 	{
-		FString DebugMessage = FString::Printf(TEXT("Suspension Force: %s | Length: %f"), *SuspensionForce.ToString(), SuspensionCurrentLength);
+		FString DebugMessage = FString::Printf(TEXT("Suspension Force: %f | Offset: %f | Velocity: %f | SuspensionRest: %f"), SuspensionForce, Offset, Velocity, SuspensionRestDistance);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, DebugMessage);
 
 		float WheelZValue = HitResult.ImpactNormal.Z - WheelRadius;
 		WheelMesh->SetRelativeLocation(FVector(0,0, (WheelZValue)));
-		CarBody->AddForceAtLocation(SuspensionForce, HitResult.ImpactPoint);
+		CarBody->AddForceAtLocation(SuspensionForce * SpringDirection, HitResult.ImpactPoint);
 		SuspensionPreviousLength = SuspensionCurrentLength;
 	}
 }
@@ -184,8 +188,6 @@ bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult
 
 	return bHit;
 }
-
-
 
 // Called to bind functionality to input
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

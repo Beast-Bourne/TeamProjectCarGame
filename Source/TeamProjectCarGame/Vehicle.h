@@ -29,6 +29,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	USceneComponent* RR_SuspensionMount;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* FL_SuspensionRest;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* FR_SuspensionRest;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* RL_SuspensionRest;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	USceneComponent* RR_SuspensionRest;
+
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
 	UStaticMeshComponent* FL_WheelMeshes;
@@ -41,17 +50,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Properties")
 	bool bDebugDraw{false};
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float WheelRadius{ 50.0f };
+	float SuspensionRestDistance{ 50.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float SuspensionLength{ 70.0f };
+	float SuspensionStrength{ 1000.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float Stiffness{ 1000.0f };
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float Damping{ 3000.0f };
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float RestLength{ 50.0f };
+	float Damper{ 3000.0f };
 
 protected:
 	// Called when the game starts or when spawned
@@ -66,13 +70,18 @@ public:
 	float GetWheelRadius(UStaticMeshComponent* WheelMesh);
 
 	// Variables
-	FVector SuspensionForce;
+
+	float WheelRadius;
+	FVector SpringDirection;
+	FVector TireVelocity;
+	
+	float SuspensionForce;
 	float SuspensionMaxLength;
 	float SuspensionRayHitDistance;
 	float SuspensionCurrentLength{};
 	float SuspensionPreviousLength{};
 
-	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
+	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest);
 	void Debug();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
 	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
