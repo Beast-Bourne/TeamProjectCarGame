@@ -91,7 +91,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	// Compute suspension length
 	SuspensionCurrentLength = bHit ? (HitResult.Distance - WheelRadius) : SuspensionMaxLength;
 
-	SpringDirection = Wheel->GetUpVector();
+	SpringDirection = HitResult.ImpactNormal;
 
 	TireVelocity = CarBody->GetPhysicsLinearVelocityAtPoint(Wheel->GetComponentLocation());
 
@@ -101,20 +101,18 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	
 	float Velocity = FVector::DotProduct(SpringDirection, TireVelocity);
 
-
 	// Calculate suspension force
 	SuspensionForce = (Offset * SuspensionStrength) - (Velocity * Damper);
 
 	// Apply force if hit
 	if (bHit)
 	{
-		FString DebugMessage = FString::Printf(TEXT("Suspension Force: %f | Offset: %f | Velocity: %f | SuspensionRest: %f"), SuspensionForce, Offset, Velocity, SuspensionRestDistance);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, DebugMessage);
-
-		float WheelZValue = HitResult.ImpactNormal.Z - WheelRadius;
-		WheelMesh->SetRelativeLocation(FVector(0,0, (WheelZValue)));
 		CarBody->AddForceAtLocation(SuspensionForce * SpringDirection, HitResult.ImpactPoint);
 		SuspensionPreviousLength = SuspensionCurrentLength;
+
+		// Set the wheel mesh to the contact point minus the wheel radius
+		FVector NewWheelLocation = HitResult.ImpactPoint + FVector(0,0, WheelRadius);
+		WheelMesh->SetWorldLocation(NewWheelLocation);
 	}
 }
 
@@ -159,7 +157,7 @@ bool AVehicle::LineTrace(FVector StartLocation, FVector EndLocation, FHitResult&
 bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const
 {
 	// Define a sphere radius (should be smaller than or equal to the wheel radius)
-	float SweepRadius = WheelRadius * 0.9f;  // Slightly smaller to avoid instant ground contact
+	float SweepRadius = WheelRadius;
 
 	// Collision query parameters
 	FCollisionQueryParams CollisionParams;
