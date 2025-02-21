@@ -108,20 +108,17 @@ void UCarForcesComponent::CalculateWheelsLocalVelocities()
 // calculates the roll resistance using F = f * m * g. Min(1, velocity) is used to remove the rolling resistance when the car is stationary
 // * -Sign(velocity) makes sure the drag and roll resistance are in the opposite direction
 // calculates the resistance due to the car's weight when on a slope using F = m * g * sin(θ)
-float UCarForcesComponent::CalculateResistanceForce()
+void UCarForcesComponent::CalculateWheelForces()
 {
 	float drag = 0.5f * airDensity * dragCoefficient * frontArea * carVelocity.X * carVelocity.X * -FMath::Sign(carVelocity.X);
-	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1.0f, carVelocity.X) * -FMath::Sign(carVelocity.X);
+	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1.0f, FMath::Abs(carVelocity.X)) * -FMath::Sign(carVelocity.X);
 	float slope = - mass * g * FMath::Sin(gradient);
-	UE_LOG(LogTemp, Log, TEXT("drag: %f"), drag);
-	UE_LOG(LogTemp, Log, TEXT("slope: %f"), slope);
-	UE_LOG(LogTemp, Log, TEXT("roll res: %f"), rollResistance);
-	tireFR.CalculateAngularAccel(0.0f, 0.0f, rollResistance/4.0f, drag/4.0f, slope/4.0f);
-	tireFL.CalculateAngularAccel(0.0f, 0.0f, rollResistance/4.0f, drag/4.0f, slope/4.0f);
-	tireRR.CalculateAngularAccel(engineInfo.drivingTorquePerWheel, 0.0f, rollResistance/4.0f, drag/4.0f, slope/4.0f);
-	tireRL.CalculateAngularAccel(engineInfo.drivingTorquePerWheel, 0.0f, rollResistance/4.0f, drag/4.0f, slope/4.0f);
-	
-	return drag + rollResistance + slope;
+	float intermidiate = (drag + slope + rollResistance)/4.0f;
+
+	tireFR.localLongitudinalForce = intermidiate;
+	tireFL.localLongitudinalForce = intermidiate;
+	tireRR.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel * tireRR.radius);
+	tireRL.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel * tireRL.radius);
 }
 
 // The rotational force can be used to get the angular acceleration (cars local yaw acceleration) using F = Iα (I: moment of inertia in the Z axis, α: angular acceleration)
@@ -131,29 +128,25 @@ FCarForces UCarForcesComponent::CalculateCarForces()
 	float totalLongitudinalForce = 0.0f;
 	float totalLateralForce = 0.0f;
 	float totalRotationalForce = 0.0f;
-	/*
+	
 	totalLongitudinalForce += tireFR.ReturnLongitudinalForceForCar();
 	totalLongitudinalForce += tireFL.ReturnLongitudinalForceForCar();
 	totalLongitudinalForce += tireRR.ReturnLongitudinalForceForCar();
 	totalLongitudinalForce += tireRL.ReturnLongitudinalForceForCar();
-	totalLongitudinalForce += CalculateResistanceForce();
 	
 	totalLateralForce += tireFR.ReturnLateralForceForCar();
 	totalLateralForce += tireFL.ReturnLateralForceForCar();
 	totalLateralForce += tireRR.ReturnLateralForceForCar();
 	totalLateralForce += tireRL.ReturnLateralForceForCar();
 
-	totalRotationalForce += tireFR.ReturnLateralForceForCar() * frontWheelOffset - tireFR.ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
-	totalRotationalForce += tireFL.ReturnLateralForceForCar() * frontWheelOffset + tireFL.ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
-	totalRotationalForce += tireRR.ReturnLateralForceForCar() * -rearWheelOffset - tireRR.ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
-	totalRotationalForce += tireRL.ReturnLateralForceForCar() * -rearWheelOffset + tireRL.ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
+	//totalRotationalForce += tireFR.ReturnLateralForceForCar() * frontWheelOffset - tireFR.ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
+	//totalRotationalForce += tireFL.ReturnLateralForceForCar() * frontWheelOffset + tireFL.ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
+	//totalRotationalForce += tireRR.ReturnLateralForceForCar() * -rearWheelOffset - tireRR.ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
+	//totalRotationalForce += tireRL.ReturnLateralForceForCar() * -rearWheelOffset + tireRL.ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
 
 	carForces.longitudinalForce = totalLongitudinalForce;
 	carForces.lateralForce = totalLateralForce;
 	carForces.angularForce = totalRotationalForce;
-	*/
-	carForces.lateralForce = 0.0f;
-	carForces.longitudinalForce = 2.0f * engineInfo.drivingTorquePerWheel*tireRadius + CalculateResistanceForce();
 
 	return carForces;
 }
@@ -163,10 +156,10 @@ void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 	carVelocity += carAcceleration * deltaTime;
 	carAngularVelocity += carAngularAcceleration * deltaTime;
 
-	tireFR.ApplyAngularAccel(deltaTime);
-	tireFL.ApplyAngularAccel(deltaTime);
-	tireRR.ApplyAngularAccel(deltaTime);
-	tireRL.ApplyAngularAccel(deltaTime);
+	tireFR.angularVelocity = carVelocity.X/ tireFR.radius;
+	tireFL.angularVelocity = carVelocity.X/ tireFL.radius;
+	tireRR.angularVelocity = carVelocity.X/ tireRR.radius;
+	tireRL.angularVelocity = carVelocity.X/ tireRL.radius;
 }
 
 void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
@@ -187,6 +180,7 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
 	tireRR.UpdateMemberVariables(engineInfo.drivingTorquePerWheel, 0.0f, -1.0f);
 	tireRL.UpdateMemberVariables(engineInfo.drivingTorquePerWheel, 0.0f, -1.0f);
 
+	CalculateWheelForces();
 	FCarForces forces = CalculateCarForces();
 	carAcceleration = FVector(forces.longitudinalForce/mass, forces.lateralForce/mass, 0.0f);
 	carAngularAcceleration = FVector(0.0f, 0.0f, forces.angularForce/mass);

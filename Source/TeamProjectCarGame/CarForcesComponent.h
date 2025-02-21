@@ -150,16 +150,6 @@ struct FTireInfo
 
 		localLongitudinalForce = FMath::Clamp(localLongitudinalForce, -staticFrictionCoefficient*load, staticFrictionCoefficient*load);
 	}
-
-	void CalculateAngularAccel(float drivingTorque, float brakingTorque, float rollResist, float drag, float slope)
-	{
-		angularAcceleration = (drivingTorque - brakingTorque + ((rollResist + drag + slope) * radius))/momentOfInertia;
-	}
-
-	void ApplyAngularAccel(float deltaTime)
-	{
-		angularVelocity += deltaTime * angularAcceleration;
-	}
 };
 
 USTRUCT(BlueprintType)
@@ -369,7 +359,7 @@ private:
 	FWheelLoads CalculateStaticWheelLoads();
 
 	// Car force functions
-	float CalculateResistanceForce();
+	void CalculateWheelForces();
 	FCarForces CalculateCarForces();
 
 	// Utility functions
