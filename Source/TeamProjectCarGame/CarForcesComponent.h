@@ -266,6 +266,12 @@ struct FBrakeInfo
 	float pressureLimit = 0.7f;         // fraction of the maximum brake pressured for the rear wheels
 	float calliperDiameter = 0.036f;    // m
 	float maxBrakePressure = 14000000.0f;    // pascals
+
+	FBrakeInfo()
+	{
+		isFrontBrake = false;
+		BrakeDiameter = 0.0f;
+	}
 	
 	FBrakeInfo(bool isFrontBrake, float brakeDiameter)
 	{
