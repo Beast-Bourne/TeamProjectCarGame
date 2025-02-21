@@ -247,10 +247,42 @@ struct FEngineInfo
 	// the currentTorque is then set based on some conditions. No torque is provided to the wheels when the clutch is pressed (>0.5) or when the cars in neutral
 	void CalculateEngineTorque(float clutchInput, float throttleInput, float carVelocity)
 	{
-		float intermediate = (clutchInput <= 0.5f)? (1-clutchInput) * throttleInput * (engineMaxTorque - engineMinTorque) + engineMaxTorque : 0.0f;
+		float intermediate = (clutchInput <= 0.5f)? (1-clutchInput) * throttleInput * (engineMaxTorque - engineMinTorque) + engineMinTorque : 0.0f;
 		currentTorque = (carVelocity < 0.0f)? FMath::Max(0.0f, intermediate) : intermediate;
 
 		drivingTorquePerWheel = (currentTorque * transmissionEfficiency * totalTransmissionRatio)/2.0f * -(FMath::Tanh(engineAngularVelocity-(engineMaxSpeed-3.0f))-1)/2.0f;
+	}
+};
+
+USTRUCT()
+struct FBrakeInfo
+{
+	GENERATED_BODY()
+
+	bool isFrontBrake;
+	float BrakeDiameter;   // m
+	float padArea = 0.007f;             // m^2
+	float frictionCoefficient = 0.5f;
+	float pressureLimit = 0.7f;         // fraction of the maximum brake pressured for the rear wheels
+	float calliperDiameter = 0.036f;    // m
+	float maxBrakePressure = 14000000.0f;    // pascals
+	
+	FBrakeInfo(bool isFrontBrake, float brakeDiameter)
+	{
+		this->isFrontBrake = isFrontBrake;
+		this->BrakeDiameter = brakeDiameter; // .41 for front and .39 for rear
+	}
+
+	float CalculateBrakingTorque(float brakeInput)
+	{
+		float pressure = maxBrakePressure * brakeInput;
+		float pressureLim = maxBrakePressure * pressureLimit;
+		float brakePressure = (!isFrontBrake && pressure >= pressureLim)? pressureLim : pressure;
+
+		float part1 = 2.0f * (0.58f*BrakeDiameter) * brakePressure;
+		//float part2 = FMath::Pi<double>();
+
+		return part1;
 	}
 };
 
