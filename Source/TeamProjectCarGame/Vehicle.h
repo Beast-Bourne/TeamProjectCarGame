@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InputAction.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Vehicle.generated.h"
@@ -53,9 +52,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	float SuspensionRestDistance{ 50.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float SuspensionStrength{ 1000.0f };
+	float SuspensionStrength{ 20000.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float Damper{ 3000.0f };
+	float Damper{ 1.0f };
 
 protected:
 	// Called when the game starts or when spawned
@@ -74,6 +73,8 @@ public:
 	float WheelRadius;
 	FVector SpringDirection;
 	FVector TireVelocity;
+	float SteerInput;
+	float AccelerationInput;
 	
 	float SuspensionForce;
 	float SuspensionMaxLength;
@@ -81,9 +82,22 @@ public:
 	float SuspensionCurrentLength{};
 	float SuspensionPreviousLength{};
 
+	float TireGripFactor = 0.8f;
+	float TireMass = 10.0f;
+	float MaxSteeringAngle = 30.0f;
+	float SteeringInterpSpeed = 5.0f;
+	float CarTopSpeed = 2000.0f;
+
+
 	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest);
+	void ApplySteeringForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
+	void Steer(float Value);
+	void Accelerate(float Value);
+	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
+	void RotateSteeringWheels(float DeltaTime);
 	void Debug();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
 	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
 
 };
+
