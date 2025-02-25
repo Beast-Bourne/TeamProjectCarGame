@@ -103,32 +103,6 @@ struct FTireInfo
 		localVelocity = FVector(xValue, yValue, zValue);
 	}
 
-	// slip multiplier is 1 for front wheels and -1 for rear wheels
-	void UpdateMemberVariables(float drivingTorque, float brakingTorque, float slipMultiplier)
-	{
-		slipVelocity = angularVelocity * radius;
-		longitudinalSlipFactor = (slipVelocity -localVelocity.X)/FMath::Max(slipVelocity, 1.0f);
-		float slipFunction = (FMath::Tanh(10 * localVelocity.X -8.0f)+1.0f)/2.0f; // evaluates at 0 when velocity.X = 0
-		lateralSlipFactor = slipFunction * slipMultiplier * (delta - localVelocity.Y/FMath::Max(slipVelocity, 1.0f));
-		combinedSlipFactor = FMath::Sqrt(longitudinalSlipFactor * longitudinalSlipFactor + lateralSlipFactor * lateralSlipFactor);
-		slipConditionFactor = threadStiffness/(3*staticFrictionCoefficient) * combinedSlipFactor;
-
-		float slipFrictionFactor = CalculateSlipFrictionFactor();
-		xSlipFriction = slipFrictionFactor * longitudinalSlipFactor;
-		ySlipFriction = slipFrictionFactor * lateralSlipFactor;
-		selfAligningTorque = (-patchLength*threadStiffness*lateralSlipFactor)/3.0f * FMath::Square(FMath::Min(0, slipConditionFactor-1.0f)) * (7*slipConditionFactor -1.0f) * load * 9.81f - (casterOffset * slipFrictionFactor * lateralSlipFactor);
-
-		xSlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLongitudinalForce - xSlipFriction);
-		ySlipForceWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localLateralForce - ySlipFriction);
-		selfAligningTorqueWithRelaxation = -FMath::Max(slipVelocity/relaxationConstant, 0.1f) * (localSelfAligningTorque - selfAligningTorque);
-
-
-		xSlipForceWithRelaxation = (1450.0f * radius * drivingTorque * radius)/(momentOfInertia + 1450*radius*radius);
-		ySlipForceWithRelaxation = 0.0f;
-		
-		UpdateForces();
-	}
-
 	float CalculateSlipFrictionFactor()
 	{
 		if (slipConditionFactor < 1.0f)
@@ -142,9 +116,9 @@ struct FTireInfo
 		return part1 * part2;
 	}
 
-	void UpdateForces()
+	void UpdateForces(float resistForce, float drivingForce)
 	{
-		localLongitudinalForce = xSlipForceWithRelaxation;
+		localLongitudinalForce = resistForce + drivingForce;
 		localLateralForce = ySlipForceWithRelaxation;
 		localSelfAligningTorque = selfAligningTorqueWithRelaxation;
 

@@ -94,13 +94,9 @@ void UCarForcesComponent::CalculateWheelLoads(float bankAngle, float gradientAng
 void UCarForcesComponent::CalculateWheelsLocalVelocities()
 {
 	tireFR.CalculateLocalVelocity(-1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
-	tireFR.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
 	tireFL.CalculateLocalVelocity(1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
-	tireFL.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
 	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
-	tireRR.UpdateMemberVariables(0.0f, 0.0f, -1.0f);
 	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
-	tireRL.UpdateMemberVariables(0.0f, 0.0f, -1.0f);
 }
 
 
@@ -174,11 +170,6 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
 	tireFL.CalculateLocalVelocity(1.0f, 1.0f, carVelocity, carAngularVelocity.Z);
 	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
 	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
-	
-	tireFR.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
-	tireFL.UpdateMemberVariables(0.0f, 0.0f, 1.0f);
-	tireRR.UpdateMemberVariables(engineInfo.drivingTorquePerWheel, 0.0f, -1.0f);
-	tireRL.UpdateMemberVariables(engineInfo.drivingTorquePerWheel, 0.0f, -1.0f);
 
 	CalculateWheelForces();
 	FCarForces forces = CalculateCarForces();
