@@ -35,10 +35,10 @@ struct FTireInfo
 	float slipVelocity = 0.0f;                               // velocity of the tire in a no-slip condition
 	float longitudinalSlipFactor = 0.0f;                     // slip of the tire in the longitudinal direction
 	float lateralSlipFactor = 0.0f;                          // slip of the tire in the lateral direction
-	float combinedSlipFactor= 0.0f;          // slip factor used for determining conditions for calculating slip forces
+	float combinedSlipFactor= 0.0f;           // slip factor used for determining conditions for calculating slip forces
 	float slipConditionFactor = 0.0f;         // factor used for checking if the tire is working in linear or sliding conditions
 	float threadStiffness = 0.0f;
-	float staticFrictionCoefficient = 0.7f;
+	float staticFrictionCoefficient = 1.2f;
 	float slidingFrictionCoefficient = 0.5f;
 	float xSlipFriction = 0.0f;
 	float ySlipFriction = 0.0f;
@@ -208,6 +208,11 @@ struct FEngineInfo
 		engineMaxTorque = (2.1486f * FMath::Pow(10.0f, -6) * FMath::Pow(engineAngularVelocity, 3))
 		- (3.7390514f * FMath::Pow(10.0f, -6.0f) * engineAngularVelocity * engineAngularVelocity)
 		+ (1.8250297732f * engineAngularVelocity);
+
+		engineMaxTorque = (1.7714f * FMath::Pow(10.0f, -7)* FMath::Pow(engineAngularVelocity, 3))
+		- 0.00128f * engineAngularVelocity * engineAngularVelocity
+		+ 1.463f * engineAngularVelocity
+		+10.76f;
 
 		engineMinTorque = (2.152813f * FMath::Pow(10.0f, -4) * engineAngularVelocity * engineAngularVelocity)
 		- (0.2413794863f * engineAngularVelocity);
@@ -383,7 +388,7 @@ private:
 	// Tire constants
 	const FWheelLoads staticWheelLoads = CalculateStaticWheelLoads();
 	const float tireRadius = 0.350f; // tire radius in meters
-	const float tireInertia = 2.2f; // the moment of inertia of the tires in kg m^2
+	const float tireInertia = 1.0f; // the moment of inertia of the tires in kg m^2
 	const float relaxationLengthCoefficient = 0.5f;
 	const float threadStiffness = 30.0f; // N/m
 	const float casterOffset = 0.03f; // m

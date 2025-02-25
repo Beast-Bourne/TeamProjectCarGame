@@ -113,12 +113,12 @@ void UCarForcesComponent::CalculateWheelForces()
 	float drag = 0.5f * airDensity * dragCoefficient * frontArea * carVelocity.X * carVelocity.X * -FMath::Sign(carVelocity.X);
 	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1.0f, FMath::Abs(carVelocity.X)) * -FMath::Sign(carVelocity.X);
 	float slope = - mass * g * FMath::Sin(gradient);
-	float intermidiate = (drag + slope + rollResistance)/4.0f;
+	float intermidiate = ((drag + slope + rollResistance)/4.0f);
 
 	tireFR.localLongitudinalForce = intermidiate;
 	tireFL.localLongitudinalForce = intermidiate;
-	tireRR.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel * tireRR.radius);
-	tireRL.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel * tireRL.radius);
+	tireRR.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel / tireRR.radius);
+	tireRL.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel / tireRL.radius);
 }
 
 // The rotational force can be used to get the angular acceleration (cars local yaw acceleration) using F = Iα (I: moment of inertia in the Z axis, α: angular acceleration)
