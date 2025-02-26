@@ -152,7 +152,7 @@ void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 	carVelocity += carAcceleration * deltaTime;
 	carAngularVelocity += carAngularAcceleration * deltaTime;
 
-	if (carVelocity.Length() < 0.01f) carVelocity = FVector(0, 0, 0);
+	if (carVelocity.Length() < 0.005f) carVelocity = FVector(0, 0, 0);
 	tireFR.angularVelocity = carVelocity.X/ tireFR.radius;
 	tireFL.angularVelocity = carVelocity.X/ tireFL.radius;
 	tireRR.angularVelocity = carVelocity.X/ tireRR.radius;
