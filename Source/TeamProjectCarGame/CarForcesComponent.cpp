@@ -23,10 +23,10 @@ UCarForcesComponent::UCarForcesComponent()
 	clutchInput = 0.0f;
 	throttleInput = 0.0f;
 
-	tireFR = FTireInfo(staticWheelLoads.FrontRight, frontWheelOffset, frontTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
-	tireFL = FTireInfo(staticWheelLoads.FrontLeft, frontWheelOffset, frontTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
-	tireRR = FTireInfo(staticWheelLoads.RearLeft, rearWheelOffset, rearTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
-	tireRL = FTireInfo(staticWheelLoads.RearLeft, rearWheelOffset, rearTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient);
+	tireFR = FTireInfo(staticWheelLoads.FrontRight, frontWheelOffset, frontTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient, true);
+	tireFL = FTireInfo(staticWheelLoads.FrontLeft, frontWheelOffset, frontTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient, true);
+	tireRR = FTireInfo(staticWheelLoads.RearLeft, rearWheelOffset, rearTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient, false);
+	tireRL = FTireInfo(staticWheelLoads.RearLeft, rearWheelOffset, rearTrackWidth, tireRadius, threadStiffness, contactPatchLength, casterOffset, relaxationLengthCoefficient, false);
 }
 
 
@@ -111,10 +111,10 @@ void UCarForcesComponent::CalculateWheelForces()
 	float slope = - mass * g * FMath::Sin(gradient);
 	float intermidiate = ((drag + slope + rollResistance)/4.0f);
 
-	tireFR.localLongitudinalForce = intermidiate;
-	tireFL.localLongitudinalForce = intermidiate;
-	tireRR.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel / tireRR.radius);
-	tireRL.localLongitudinalForce = intermidiate + (engineInfo.drivingTorquePerWheel / tireRL.radius);
+	tireFR.localLongitudinalForce = intermidiate + (tireFR.brake.CalculateBrakingTorque(brakeInput, tireFR.angularVelocity) / tireFR.radius);
+	tireFL.localLongitudinalForce = intermidiate + (tireFL.brake.CalculateBrakingTorque(brakeInput, tireFL.angularVelocity) / tireFL.radius);
+	tireRR.localLongitudinalForce = intermidiate + ((engineInfo.drivingTorquePerWheel + tireRR.brake.CalculateBrakingTorque(brakeInput, tireRR.angularVelocity)) / tireRR.radius);
+	tireRL.localLongitudinalForce = intermidiate + ((engineInfo.drivingTorquePerWheel + tireRL.brake.CalculateBrakingTorque(brakeInput, tireRL.angularVelocity)) / tireRL.radius);
 }
 
 // The rotational force can be used to get the angular acceleration (cars local yaw acceleration) using F = Iα (I: moment of inertia in the Z axis, α: angular acceleration)
@@ -152,6 +152,7 @@ void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 	carVelocity += carAcceleration * deltaTime;
 	carAngularVelocity += carAngularAcceleration * deltaTime;
 
+	if (carVelocity.Length() < 0.01f) carVelocity = FVector(0, 0, 0);
 	tireFR.angularVelocity = carVelocity.X/ tireFR.radius;
 	tireFL.angularVelocity = carVelocity.X/ tireFL.radius;
 	tireRR.angularVelocity = carVelocity.X/ tireRR.radius;

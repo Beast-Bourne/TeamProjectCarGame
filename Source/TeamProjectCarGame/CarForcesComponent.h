@@ -24,6 +24,45 @@ enum class EWheelPosition : uint8
 	RearLeft
 };
 
+USTRUCT()
+struct FBrakeInfo
+{
+	GENERATED_BODY()
+
+	bool isFrontBrake;
+	float BrakeDiameter;   // m
+	float padArea = 0.007f;             // m^2
+	float frictionCoefficient = 0.5f;
+	float pressureLimit = 0.7f;         // fraction of the maximum brake pressured for the rear wheels
+	float calliperDiameter = 0.036f;    // m
+	float maxBrakePressure = 14000.0f;    // kilo-pascals
+
+	FBrakeInfo()
+	{
+		isFrontBrake = false;
+		BrakeDiameter = 0.0f;
+	}
+	
+	FBrakeInfo(bool isFrontBrake)
+	{
+		this->isFrontBrake = isFrontBrake;
+		this->BrakeDiameter = (isFrontBrake)? 0.41f : 0.39f; // .41 for front and .39 for rear
+	}
+
+	float CalculateBrakingTorque(float brakeInput, float wheelAngularVel)
+	{
+		float pressure = maxBrakePressure * brakeInput;
+		float pressureLim = maxBrakePressure * pressureLimit;
+		float brakePressure = (!isFrontBrake && pressure >= pressureLim)? pressureLim : pressure;
+
+		float part1 = 2.0f * (0.58f*BrakeDiameter) * brakePressure * 10.0f;
+		float part2 = (PI/4.0f * calliperDiameter*calliperDiameter)/padArea;
+		float part3 = PI * frictionCoefficient * (BrakeDiameter*BrakeDiameter - FMath::Square(0.58f *BrakeDiameter));
+
+		return -part1 * part2 * part3 * FMath::Tanh(wheelAngularVel);
+	}
+};
+
 USTRUCT(BlueprintType)
 struct FTireInfo
 {
@@ -66,6 +105,8 @@ struct FTireInfo
 	float momentOfInertia = 2.2f; // hard coded (CHANGE LATER)
 	float angularAcceleration = 0.0f;
 
+	FBrakeInfo brake;
+
 	// default constructor
 	FTireInfo()
 	{
@@ -73,7 +114,7 @@ struct FTireInfo
 	}
 	
 	// main constructor
-	FTireInfo(float load, float offset, float trackWidth, float radius, float threadStiffness, float patchLength, float casterOffset, float relaxationConstant)
+	FTireInfo(float load, float offset, float trackWidth, float radius, float threadStiffness, float patchLength, float casterOffset, float relaxationConstant, bool isFront)
 	{
 		this->load = load;
 		this->offsetFromCentreOfMass = offset;
@@ -83,6 +124,7 @@ struct FTireInfo
 		this->patchLength = patchLength;
 		this->casterOffset = casterOffset;
 		this->relaxationConstant = relaxationConstant;
+		brake = FBrakeInfo(isFront);
 	}
 
 	float ReturnLongitudinalForceForCar()
@@ -233,44 +275,6 @@ struct FEngineInfo
 	}
 };
 
-USTRUCT()
-struct FBrakeInfo
-{
-	GENERATED_BODY()
-
-	bool isFrontBrake;
-	float BrakeDiameter;   // m
-	float padArea = 0.007f;             // m^2
-	float frictionCoefficient = 0.5f;
-	float pressureLimit = 0.7f;         // fraction of the maximum brake pressured for the rear wheels
-	float calliperDiameter = 0.036f;    // m
-	float maxBrakePressure = 14000000.0f;    // pascals
-
-	FBrakeInfo()
-	{
-		isFrontBrake = false;
-		BrakeDiameter = 0.0f;
-	}
-	
-	FBrakeInfo(bool isFrontBrake, float brakeDiameter)
-	{
-		this->isFrontBrake = isFrontBrake;
-		this->BrakeDiameter = brakeDiameter; // .41 for front and .39 for rear
-	}
-
-	float CalculateBrakingTorque(float brakeInput)
-	{
-		float pressure = maxBrakePressure * brakeInput;
-		float pressureLim = maxBrakePressure * pressureLimit;
-		float brakePressure = (!isFrontBrake && pressure >= pressureLim)? pressureLim : pressure;
-
-		float part1 = 2.0f * (0.58f*BrakeDiameter) * brakePressure;
-		//float part2 = FMath::Pi<double>();
-
-		return part1;
-	}
-};
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TEAMPROJECTCARGAME_API UCarForcesComponent : public UActorComponent
 {
@@ -316,6 +320,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	float throttleInput;
+
+	UPROPERTY(BlueprintReadWrite)
+	float brakeInput;
 
 	UPROPERTY(BlueprintReadOnly)
 	FVector carVelocity;
