@@ -71,7 +71,6 @@ public:
 	// Variables
 
 	float WheelRadius;
-	FVector SpringDirection;
 	FVector TireVelocity;
 	float SteerInput;
 	float AccelerationInput;
@@ -82,11 +81,27 @@ public:
 	float SuspensionCurrentLength{};
 	float SuspensionPreviousLength{};
 
+	float FR_SuspensionForce;
+	float FR_SuspensionOffset;
+	FVector FR_SuspensionDirection;
+
+	float FL_SuspensionForce;
+	float FL_SuspensionOffset;
+	FVector FL_SuspensionDirection;
+
+	float RR_SuspensionForce;
+	float RR_SuspensionOffset;
+	FVector RR_SuspensionDirection;
+
+	float RL_SuspensionForce;
+	float RL_SuspensionOffset;
+	FVector RL_SuspensionDirection;
+
 	float TireGripFactor = 0.8f;
 	float TireMass = 10.0f;
 	float MaxSteeringAngle = 30.0f;
 	float SteeringInterpSpeed = 5.0f;
-	float CarTopSpeed = 2000.0f;
+	float CarTopSpeed = 2000000.0f;
 
 
 	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest);

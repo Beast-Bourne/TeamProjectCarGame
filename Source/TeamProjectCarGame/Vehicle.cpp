@@ -78,6 +78,28 @@ void AVehicle::Tick(float DeltaTime)
 
 	ApplyAccelerationForce(FL_SuspensionMount, FL_WheelMeshes);
 	ApplyAccelerationForce(FR_SuspensionMount, FR_WheelMeshes);
+
+	if (GEngine)
+	{
+		FString Message1 = FString::Printf(TEXT("Wheel Radius: %f"), WheelRadius);
+		GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, Message1);
+
+		FString Message2 = FString::Printf(TEXT("FR_SuspensionForce: %f, FL_SuspensionForce: %f"), FR_SuspensionForce, FL_SuspensionForce);
+		GEngine->AddOnScreenDebugMessage(2, 5.f, FColor::Red, Message2);
+		FString Message3 = FString::Printf(TEXT("RR_SuspensionForce: %f, RL_SuspensionForce: %f,"), RR_SuspensionForce, RL_SuspensionForce);
+		GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Red, Message3);
+
+		FString Message4 = FString::Printf(TEXT("FR_SuspensionOffset: %f, FL_SuspensionOffset: %f"), FR_SuspensionOffset, FL_SuspensionOffset);
+		GEngine->AddOnScreenDebugMessage(5, 5.f, FColor::Red, Message4);
+		FString Message5 = FString::Printf(TEXT("RR_SuspensionOffset: %f, RL_SuspensionOffset: %f"), RR_SuspensionOffset, RL_SuspensionOffset);
+		GEngine->AddOnScreenDebugMessage(6, 5.f, FColor::Red, Message5);
+
+		FString Message6 = FString::Printf(TEXT("FR_SuspensionDirection: X = %f, Y = %f, Z = %f, FL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), FR_SuspensionDirection.X, FR_SuspensionDirection.Y, FR_SuspensionDirection.Z, FL_SuspensionDirection.X, FL_SuspensionDirection.Y, FL_SuspensionDirection.Z);
+		GEngine->AddOnScreenDebugMessage(8, 5.f, FColor::Red, Message6);
+		FString Message7 = FString::Printf(TEXT("RR_SuspensionDirection: X = %f, Y = %f, Z = %f, RL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), RR_SuspensionDirection.X, RR_SuspensionDirection.Y, RR_SuspensionDirection.Z, RL_SuspensionDirection.X, RL_SuspensionDirection.Y, RL_SuspensionDirection.Z);
+		GEngine->AddOnScreenDebugMessage(9, 5.f, FColor::Red, Message7);
+	}
+
 	};
 
 // Function to manage how the car reacts to elevation changes
@@ -98,7 +120,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	// Compute suspension length
 	SuspensionCurrentLength = bHit ? (HitResult.Distance - WheelRadius) : SuspensionMaxLength;
 
-	SpringDirection = HitResult.ImpactNormal;
+	FVector SpringDirection = HitResult.ImpactNormal;
 
 	TireVelocity = CarBody->GetPhysicsLinearVelocityAtPoint(Wheel->GetComponentLocation());
 
@@ -120,6 +142,32 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 		FVector NewWheelLocation = HitResult.Location;
 		WheelMesh->SetWorldLocation(NewWheelLocation);
 	}
+
+	if (Wheel->GetName() == "FR_Suspension")
+	{
+		FR_SuspensionForce = SuspensionForce;
+		FR_SuspensionOffset = Offset;
+		FR_SuspensionDirection = SpringDirection;
+	}
+	if (Wheel->GetName() == "FL_Suspension")
+	{
+		FL_SuspensionForce = SuspensionForce;
+		FL_SuspensionOffset = Offset;
+		FL_SuspensionDirection = SpringDirection;
+	}
+	if (Wheel->GetName() == "RR_Suspension")
+	{
+		RR_SuspensionForce = SuspensionForce;
+		RR_SuspensionOffset = Offset;
+		RR_SuspensionDirection = SpringDirection;
+	}
+	if (Wheel->GetName() == "RL_Suspension")
+	{
+		RL_SuspensionForce = SuspensionForce;
+		RL_SuspensionOffset = Offset;
+		RL_SuspensionDirection = SpringDirection;
+	}
+	
 }
 
 // Function which handles how the debug options are being drawn/displayed
