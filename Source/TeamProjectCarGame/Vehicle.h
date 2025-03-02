@@ -52,7 +52,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	float SuspensionRestDistance{ 50.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
-	float SuspensionStrength{ 20000.0f };
+	float FrontSuspensionStrength{ 100.0f };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float RearSuspensionStrength{ 150.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	float Damper{ 1.0f };
 
@@ -104,15 +106,17 @@ public:
 	float CarTopSpeed = 2000000.0f;
 
 
-	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest);
+	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest, float SuspensionStrength, float WheelLoad, bool DebugDraw);
 	void ApplySteeringForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
 	void Steer(float Value);
-	void Accelerate(float Value);
-	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
+	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce);
 	void RotateSteeringWheels(float DeltaTime);
 	void Debug();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
 	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
+
+	UFUNCTION(BlueprintCallable)
+	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce);
 
 };
 

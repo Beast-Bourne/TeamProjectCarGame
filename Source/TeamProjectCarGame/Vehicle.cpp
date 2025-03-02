@@ -65,45 +65,12 @@ void AVehicle::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Suspension simulation
-	SuspensionCast(FL_SuspensionMount, FL_WheelMeshes, FL_SuspensionRest);
-	SuspensionCast(FR_SuspensionMount, FR_WheelMeshes, FR_SuspensionRest);
-	SuspensionCast(RL_SuspensionMount, RL_WheelMeshes, RL_SuspensionRest);
-	SuspensionCast(RR_SuspensionMount, RR_WheelMeshes, RR_SuspensionRest);
 
-	ApplySteeringForce(FL_SuspensionMount, FL_WheelMeshes);
-	ApplySteeringForce(FR_SuspensionMount, FR_WheelMeshes);
-
-	RotateSteeringWheels(DeltaTime);
-
-	ApplyAccelerationForce(FL_SuspensionMount, FL_WheelMeshes);
-	ApplyAccelerationForce(FR_SuspensionMount, FR_WheelMeshes);
-
-	if (GEngine)
-	{
-		FString Message1 = FString::Printf(TEXT("Wheel Radius: %f"), WheelRadius);
-		GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, Message1);
-
-		FString Message2 = FString::Printf(TEXT("FR_SuspensionForce: %f, FL_SuspensionForce: %f"), FR_SuspensionForce, FL_SuspensionForce);
-		GEngine->AddOnScreenDebugMessage(2, 5.f, FColor::Red, Message2);
-		FString Message3 = FString::Printf(TEXT("RR_SuspensionForce: %f, RL_SuspensionForce: %f,"), RR_SuspensionForce, RL_SuspensionForce);
-		GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Red, Message3);
-
-		FString Message4 = FString::Printf(TEXT("FR_SuspensionOffset: %f, FL_SuspensionOffset: %f"), FR_SuspensionOffset, FL_SuspensionOffset);
-		GEngine->AddOnScreenDebugMessage(5, 5.f, FColor::Red, Message4);
-		FString Message5 = FString::Printf(TEXT("RR_SuspensionOffset: %f, RL_SuspensionOffset: %f"), RR_SuspensionOffset, RL_SuspensionOffset);
-		GEngine->AddOnScreenDebugMessage(6, 5.f, FColor::Red, Message5);
-
-		FString Message6 = FString::Printf(TEXT("FR_SuspensionDirection: X = %f, Y = %f, Z = %f, FL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), FR_SuspensionDirection.X, FR_SuspensionDirection.Y, FR_SuspensionDirection.Z, FL_SuspensionDirection.X, FL_SuspensionDirection.Y, FL_SuspensionDirection.Z);
-		GEngine->AddOnScreenDebugMessage(8, 5.f, FColor::Red, Message6);
-		FString Message7 = FString::Printf(TEXT("RR_SuspensionDirection: X = %f, Y = %f, Z = %f, RL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), RR_SuspensionDirection.X, RR_SuspensionDirection.Y, RR_SuspensionDirection.Z, RL_SuspensionDirection.X, RL_SuspensionDirection.Y, RL_SuspensionDirection.Z);
-		GEngine->AddOnScreenDebugMessage(9, 5.f, FColor::Red, Message7);
-	}
 
 	};
 
 // Function to manage how the car reacts to elevation changes
-void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest)
+void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest, float SuspensionStrength, float WheelLoad, bool DebugDraw)
 {
 	
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
@@ -115,7 +82,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	FVector EndTrace = StartTrace + (Wheel->GetUpVector() * -SuspensionMaxLength);
 
 	// Use sweep trace instead of line trace
-	bool bHit = SweepTrace(StartTrace, EndTrace, HitResult, bDebugDraw);
+	bool bHit = SweepTrace(StartTrace, EndTrace, HitResult, DebugDraw);
 
 	// Compute suspension length
 	SuspensionCurrentLength = bHit ? (HitResult.Distance - WheelRadius) : SuspensionMaxLength;
@@ -131,7 +98,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	float Velocity = FVector::DotProduct(SpringDirection, TireVelocity);
 
 	// Calculate suspension force
-	SuspensionForce = (Offset * SuspensionStrength) - (Velocity * Damper);
+	SuspensionForce = (Offset * (SuspensionStrength * WheelLoad)) - (Velocity * Damper);
 
 	// Apply force if hit
 	if (bHit)
@@ -239,12 +206,51 @@ bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult
 	return bHit;
 }
 
+void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce)
+{
+	float DeltaTime = GetWorld()->GetDeltaSeconds();
+
+	// Suspension simulation
+	SuspensionCast(FL_SuspensionMount, FL_WheelMeshes, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
+	SuspensionCast(FR_SuspensionMount, FR_WheelMeshes, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
+	SuspensionCast(RL_SuspensionMount, RL_WheelMeshes, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
+	SuspensionCast(RR_SuspensionMount, RR_WheelMeshes, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
+
+	ApplySteeringForce(FL_SuspensionMount, FL_WheelMeshes);
+	ApplySteeringForce(FR_SuspensionMount, FR_WheelMeshes);
+
+	RotateSteeringWheels(DeltaTime);
+
+	ApplyAccelerationForce(FL_SuspensionMount, FL_WheelMeshes, ResultantForce);
+	ApplyAccelerationForce(FR_SuspensionMount, FR_WheelMeshes, ResultantForce);
+
+	if (GEngine)
+	{
+		FString Message1 = FString::Printf(TEXT("Wheel Radius: %f"), WheelRadius);
+		GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, Message1);
+
+		FString Message2 = FString::Printf(TEXT("FR_SuspensionForce: %f, FL_SuspensionForce: %f"), FR_SuspensionForce, FL_SuspensionForce);
+		GEngine->AddOnScreenDebugMessage(2, 5.f, FColor::Red, Message2);
+		FString Message3 = FString::Printf(TEXT("RR_SuspensionForce: %f, RL_SuspensionForce: %f,"), RR_SuspensionForce, RL_SuspensionForce);
+		GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Red, Message3);
+
+		FString Message4 = FString::Printf(TEXT("FR_SuspensionOffset: %f, FL_SuspensionOffset: %f"), FR_SuspensionOffset, FL_SuspensionOffset);
+		GEngine->AddOnScreenDebugMessage(5, 5.f, FColor::Red, Message4);
+		FString Message5 = FString::Printf(TEXT("RR_SuspensionOffset: %f, RL_SuspensionOffset: %f"), RR_SuspensionOffset, RL_SuspensionOffset);
+		GEngine->AddOnScreenDebugMessage(6, 5.f, FColor::Red, Message5);
+
+		FString Message6 = FString::Printf(TEXT("FR_SuspensionDirection: X = %f, Y = %f, Z = %f, FL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), FR_SuspensionDirection.X, FR_SuspensionDirection.Y, FR_SuspensionDirection.Z, FL_SuspensionDirection.X, FL_SuspensionDirection.Y, FL_SuspensionDirection.Z);
+		GEngine->AddOnScreenDebugMessage(8, 5.f, FColor::Red, Message6);
+		FString Message7 = FString::Printf(TEXT("RR_SuspensionDirection: X = %f, Y = %f, Z = %f, RL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), RR_SuspensionDirection.X, RR_SuspensionDirection.Y, RR_SuspensionDirection.Z, RL_SuspensionDirection.X, RL_SuspensionDirection.Y, RL_SuspensionDirection.Z);
+		GEngine->AddOnScreenDebugMessage(9, 5.f, FColor::Red, Message7);
+	}
+}
+
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAxis("Steer", this, &AVehicle::Steer);
-	PlayerInputComponent->BindAxis("Accelerate", this, &AVehicle::Accelerate);
 }
 
 
@@ -310,35 +316,11 @@ void AVehicle::ApplySteeringForce(USceneComponent* Wheel, UStaticMeshComponent* 
 	UE_LOG(LogTemp, Warning, TEXT("Applied Force: %s"), *Force.ToString());
 }
 
-
-void AVehicle::Accelerate(float Value)
+void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce)
 {
-	AccelerationInput = FMath::Clamp(Value, -1.0f, 1.0f);
-}
-
-void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh)
-{
-	if (!Wheel || !WheelMesh || FMath::IsNearlyZero(AccelerationInput)) return;
-
-	FVector AccelerationDirection = Wheel->GetForwardVector();
-	FVector CarVelocity = CarBody->GetPhysicsLinearVelocity();
-
-	// Calculate the car's forward speed (dot product of velocity and forward direction)
-	float CarSpeed = FVector::DotProduct(CarBody->GetForwardVector(), CarVelocity);
-
-	// Normalize the car speed relative to the top speed
-	float NormalizedSpeed = FMath::Clamp(FMath::Abs(CarSpeed) / CarTopSpeed, 0.0f, 1.0f);
-
-	// Simple linear torque: The more input, the more torque is applied
-	float Torque = AccelerationInput * (1.0f - NormalizedSpeed);  // Prevent overspeeding
-
-	// Apply force at the wheel
-	CarBody->AddForceAtLocation(AccelerationDirection * Torque * 1000000, Wheel->GetComponentLocation());
-
-	// Display the AccelerationInput value on screen (for debugging)
-	if (GEngine)
-	{
-		FString DebugMessage = FString::Printf(TEXT("Acceleration Input: %f"), Torque);
-		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Yellow, DebugMessage);
-	}
+	CarBody->AddForce(ResultantForce * 145000);
+	/*float DeltaTime = GetWorld()->GetDeltaSeconds();
+	FVector WorldVector = CarBody->GetComponentTransform().TransformPosition(Velocity);
+	FVector NewPos = CarBody->GetComponentLocation() + (Velocity * DeltaTime * 100);
+	CarBody->SetWorldLocation(NewPos);*/
 }
