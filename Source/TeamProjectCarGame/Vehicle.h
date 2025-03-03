@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/BoxComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Vehicle.generated.h"
 
@@ -38,14 +37,23 @@ public:
 	USceneComponent* RR_SuspensionRest;
 
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
-	UStaticMeshComponent* FL_WheelMeshes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
-	UStaticMeshComponent* FR_WheelMeshes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
-	UStaticMeshComponent* RL_WheelMeshes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wheel Mesh")
-	UStaticMeshComponent* RR_WheelMeshes;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tire Mesh")
+	UStaticMeshComponent* FL_TireMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tire Mesh")
+	UStaticMeshComponent* FR_TireMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tire Mesh")
+	UStaticMeshComponent* RL_TireMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tire Mesh")
+	UStaticMeshComponent* RR_TireMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rim Mesh")
+	UStaticMeshComponent* FL_RimMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rim Mesh")
+	UStaticMeshComponent* FR_RimMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rim Mesh")
+	UStaticMeshComponent* RL_RimMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rim Mesh")
+	UStaticMeshComponent* RR_RimMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug Properties")
 	bool bDebugDraw{false};
@@ -86,18 +94,22 @@ public:
 	float FR_SuspensionForce;
 	float FR_SuspensionOffset;
 	FVector FR_SuspensionDirection;
+	float FR_SpringVelocity;
 
 	float FL_SuspensionForce;
 	float FL_SuspensionOffset;
 	FVector FL_SuspensionDirection;
+	float FL_SpringVelocity;
 
 	float RR_SuspensionForce;
 	float RR_SuspensionOffset;
 	FVector RR_SuspensionDirection;
+	float RR_SpringVelocity;
 
 	float RL_SuspensionForce;
 	float RL_SuspensionOffset;
 	FVector RL_SuspensionDirection;
+	float RL_SpringVelocity;
 
 	float TireGripFactor = 0.8f;
 	float TireMass = 10.0f;
@@ -107,16 +119,13 @@ public:
 
 
 	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest, float SuspensionStrength, float WheelLoad, bool DebugDraw);
-	void ApplySteeringForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh);
-	void Steer(float Value);
-	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce);
-	void RotateSteeringWheels(float DeltaTime);
+	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce, FVector Velocity);
 	void Debug();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
 	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
 
 	UFUNCTION(BlueprintCallable)
-	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce);
+	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce, FVector Velocity);
 
 };
 

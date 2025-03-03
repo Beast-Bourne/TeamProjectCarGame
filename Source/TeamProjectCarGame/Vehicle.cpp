@@ -25,10 +25,15 @@ AVehicle::AVehicle()
 	RR_SuspensionRest = CreateDefaultSubobject<USceneComponent>(TEXT("RR_SuspensionRest"));
 
 	// Meshes used to dynamically display wheel's current location
-	FL_WheelMeshes = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FL_WheelMesh"));
-	FR_WheelMeshes = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FR_WheelMesh"));
-	RL_WheelMeshes = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RL_WheelMesh"));
-	RR_WheelMeshes = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RR_WheelMesh"));
+	FL_TireMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FL_TireMesh"));
+	FR_TireMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FR_TireMesh"));
+	RL_TireMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RL_TireMesh"));
+	RR_TireMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RR_TireMesh"));
+
+	FL_RimMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FL_RimMesh"));
+	FR_RimMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FR_RimMesh"));
+	RL_RimMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RL_RimMesh"));
+	RR_RimMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RR_RimMesh"));
 
 	// Attach all to the Root Component
 	RootComponent = CarBody;
@@ -43,10 +48,15 @@ AVehicle::AVehicle()
 	RR_SuspensionRest->SetupAttachment(RR_SuspensionMount);
 	
 	// Attach the Static Meshes to the Scene Components
-	FL_WheelMeshes->SetupAttachment(FL_SuspensionMount);
-	FR_WheelMeshes->SetupAttachment(FR_SuspensionMount);
-	RL_WheelMeshes->SetupAttachment(RL_SuspensionMount);
-	RR_WheelMeshes->SetupAttachment(RR_SuspensionMount);
+	FL_TireMesh->SetupAttachment(FL_SuspensionMount);
+	FR_TireMesh->SetupAttachment(FR_SuspensionMount);
+	RL_TireMesh->SetupAttachment(RL_SuspensionMount);
+	RR_TireMesh->SetupAttachment(RR_SuspensionMount);
+
+	FL_RimMesh->SetupAttachment(FL_TireMesh);
+	FR_RimMesh->SetupAttachment(FR_TireMesh);
+	RL_RimMesh->SetupAttachment(RL_TireMesh);
+	RR_RimMesh->SetupAttachment(RR_TireMesh);
 
 }
 
@@ -94,11 +104,13 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	SuspensionRestDistance = Wheel->GetComponentLocation().Z - SuspensionRest->GetComponentLocation().Z;
 
 	float Offset = SuspensionRestDistance - HitResult.Distance;
+
+	float ClampedOffset = FMath::Clamp(Offset, -5, 10);
 	
 	float Velocity = FVector::DotProduct(SpringDirection, TireVelocity);
 
 	// Calculate suspension force
-	SuspensionForce = (Offset * (SuspensionStrength * WheelLoad)) - (Velocity * Damper);
+	SuspensionForce = (Offset * SuspensionStrength * WheelLoad) - (Velocity * Damper);
 
 	// Apply force if hit
 	if (bHit)
@@ -109,30 +121,39 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 		FVector NewWheelLocation = HitResult.Location;
 		WheelMesh->SetWorldLocation(NewWheelLocation);
 	}
+	else
+	{
+		SuspensionForce = 0;
+		
+	}
 
 	if (Wheel->GetName() == "FR_Suspension")
 	{
 		FR_SuspensionForce = SuspensionForce;
-		FR_SuspensionOffset = Offset;
+		FR_SuspensionOffset = ClampedOffset;
 		FR_SuspensionDirection = SpringDirection;
+		FR_SpringVelocity = Velocity;
 	}
 	if (Wheel->GetName() == "FL_Suspension")
 	{
 		FL_SuspensionForce = SuspensionForce;
-		FL_SuspensionOffset = Offset;
+		FL_SuspensionOffset = ClampedOffset;
 		FL_SuspensionDirection = SpringDirection;
+		FL_SpringVelocity = Velocity;
 	}
 	if (Wheel->GetName() == "RR_Suspension")
 	{
 		RR_SuspensionForce = SuspensionForce;
-		RR_SuspensionOffset = Offset;
+		RR_SuspensionOffset = ClampedOffset;
 		RR_SuspensionDirection = SpringDirection;
+		RR_SpringVelocity = Velocity;
 	}
 	if (Wheel->GetName() == "RL_Suspension")
 	{
 		RL_SuspensionForce = SuspensionForce;
-		RL_SuspensionOffset = Offset;
+		RL_SuspensionOffset = ClampedOffset;
 		RL_SuspensionDirection = SpringDirection;
+		RL_SpringVelocity = Velocity;
 	}
 	
 }
@@ -206,23 +227,18 @@ bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult
 	return bHit;
 }
 
-void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce)
+void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce, FVector Velocity)
 {
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 
 	// Suspension simulation
-	SuspensionCast(FL_SuspensionMount, FL_WheelMeshes, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
-	SuspensionCast(FR_SuspensionMount, FR_WheelMeshes, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
-	SuspensionCast(RL_SuspensionMount, RL_WheelMeshes, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
-	SuspensionCast(RR_SuspensionMount, RR_WheelMeshes, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
+	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
+	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
+	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
+	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
 
-	ApplySteeringForce(FL_SuspensionMount, FL_WheelMeshes);
-	ApplySteeringForce(FR_SuspensionMount, FR_WheelMeshes);
-
-	RotateSteeringWheels(DeltaTime);
-
-	ApplyAccelerationForce(FL_SuspensionMount, FL_WheelMeshes, ResultantForce);
-	ApplyAccelerationForce(FR_SuspensionMount, FR_WheelMeshes, ResultantForce);
+	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, ResultantForce, Velocity);
+	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, ResultantForce, Velocity);
 
 	if (GEngine)
 	{
@@ -239,6 +255,11 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 		FString Message5 = FString::Printf(TEXT("RR_SuspensionOffset: %f, RL_SuspensionOffset: %f"), RR_SuspensionOffset, RL_SuspensionOffset);
 		GEngine->AddOnScreenDebugMessage(6, 5.f, FColor::Red, Message5);
 
+		FString Message8 = FString::Printf(TEXT("FR_SpringVelocity %f, FL_SpringVelocity: %f"), FR_SpringVelocity, FL_SpringVelocity);
+		GEngine->AddOnScreenDebugMessage(2, 5.f, FColor::Red, Message8);
+		FString Message9 = FString::Printf(TEXT("RR_SpringVelocity: %f, RL_SpringVelocity: %f,"), RR_SpringVelocity, RL_SpringVelocity);
+		GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Red, Message9);
+
 		FString Message6 = FString::Printf(TEXT("FR_SuspensionDirection: X = %f, Y = %f, Z = %f, FL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), FR_SuspensionDirection.X, FR_SuspensionDirection.Y, FR_SuspensionDirection.Z, FL_SuspensionDirection.X, FL_SuspensionDirection.Y, FL_SuspensionDirection.Z);
 		GEngine->AddOnScreenDebugMessage(8, 5.f, FColor::Red, Message6);
 		FString Message7 = FString::Printf(TEXT("RR_SuspensionDirection: X = %f, Y = %f, Z = %f, RL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), RR_SuspensionDirection.X, RR_SuspensionDirection.Y, RR_SuspensionDirection.Z, RL_SuspensionDirection.X, RL_SuspensionDirection.Y, RL_SuspensionDirection.Z);
@@ -249,8 +270,7 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	PlayerInputComponent->BindAxis("Steer", this, &AVehicle::Steer);
+	
 }
 
 
@@ -265,62 +285,14 @@ float AVehicle::GetWheelRadius(UStaticMeshComponent* WheelMesh)
 	return BoxExtent.Z;
 }
 
-void AVehicle::Steer(float Value)
+void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce, FVector Velocity)
 {
-	SteerInput = FMath::Clamp(Value, -1.0f, 1.0f);
-}
+	// Get the force application point
+	FVector ForceApplicationPoint = WheelMesh->GetComponentLocation();
+	ForceApplicationPoint.Z = GetActorLocation().Z;
+	FVector ForceMagnitude = CarBody->GetForwardVector() * (Velocity.X * 145000);
+	FString Message10 = FString::Printf(TEXT("RR_SuspensionOffset: %f"), ForceMagnitude.X);
+	GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
+	CarBody->AddForce(ForceMagnitude);
 
-void AVehicle::RotateSteeringWheels(float DeltaTime)
-{
-	float TargetAngle = SteerInput * MaxSteeringAngle;
-
-	FRotator CurrentRotationFL = FL_WheelMeshes->GetRelativeRotation();
-	FRotator NewRotationFL = FRotator(CurrentRotationFL.Pitch, FMath::FInterpTo(CurrentRotationFL.Yaw, TargetAngle, DeltaTime, SteeringInterpSpeed), CurrentRotationFL.Roll);
-	FL_WheelMeshes->SetRelativeRotation(NewRotationFL);
-
-	FRotator CurrentRotationFR = FR_WheelMeshes->GetRelativeRotation();
-	FRotator NewRotationFR = FRotator(CurrentRotationFR.Pitch, FMath::FInterpTo(CurrentRotationFR.Yaw, TargetAngle, DeltaTime, SteeringInterpSpeed), CurrentRotationFR.Roll);
-	FR_WheelMeshes->SetRelativeRotation(NewRotationFR);
-}
-
-void AVehicle::ApplySteeringForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh)
-{
-	if (!Wheel || !WheelMesh || FMath::IsNearlyZero(SteerInput)) return;
-
-	FVector SteeringDir = Wheel->GetRightVector();
-	FVector TireWorldVel = CarBody->GetPhysicsLinearVelocityAtPoint(Wheel->GetComponentLocation());
-
-	// Debug: Check velocity values
-	UE_LOG(LogTemp, Warning, TEXT("Tire World Vel: %s"), *TireWorldVel.ToString());
-
-	float SteeringVel = FVector::DotProduct(SteeringDir, TireWorldVel);
-	float DesiredVelChange = -SteeringVel * TireGripFactor;
-	float DesiredAccel = DesiredVelChange / GetWorld()->GetDeltaSeconds();
-
-	// Debug: Check calculated acceleration
-	UE_LOG(LogTemp, Warning, TEXT("Desired Accel: %f"), DesiredAccel);
-
-	// Calculate force to apply
-	FVector Force = SteeringDir * 1000 * DesiredAccel;
-
-	// Define the axis to apply the torque (e.g., around the Z-axis for steering)
-    FVector TorqueAxis = FVector(0, 0, 1);  // Z-axis is typical for steering
-
-    // Calculate the torque value you want to apply (you can modify the magnitude as needed)
-    float TorqueMagnitude = 20000000.f * SteerInput * AccelerationInput;
-
-    // Apply the torque in radians (make sure the magnitude is reasonable)
-    CarBody->AddTorqueInRadians(TorqueAxis * TorqueMagnitude);
-
-	// Debug: Check applied force
-	UE_LOG(LogTemp, Warning, TEXT("Applied Force: %s"), *Force.ToString());
-}
-
-void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce)
-{
-	CarBody->AddForce(ResultantForce * 145000);
-	/*float DeltaTime = GetWorld()->GetDeltaSeconds();
-	FVector WorldVector = CarBody->GetComponentTransform().TransformPosition(Velocity);
-	FVector NewPos = CarBody->GetComponentLocation() + (Velocity * DeltaTime * 100);
-	CarBody->SetWorldLocation(NewPos);*/
 }
