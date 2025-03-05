@@ -125,7 +125,7 @@ public:
 	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
 
 	UFUNCTION(BlueprintCallable)
-	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce, FVector Velocity);
+	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity);
 
 };
 

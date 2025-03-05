@@ -42,7 +42,7 @@ void UCarForcesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	PerformSimulationFrame(DeltaTime);
+	//PerformSimulationFrame(DeltaTime);
 }
 
 // calculates the loads on each wheel of the car and returns a struct containing the results
@@ -177,12 +177,23 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
 	carAcceleration = FVector(forces.longitudinalForce/mass, forces.lateralForce/mass, 0.0f);
 	carAngularAcceleration = FVector(0.0f, 0.0f, forces.angularForce/mass);
 
+	CalculateCarAngularVelocity();
+	
 	ApplyAllAccelerations(deltaTime);
 }
 
 void UCarForcesComponent::ChangeGear(int gear)
 {
 	engineInfo.SwapGears(gear);
+}
+
+void UCarForcesComponent::CalculateCarAngularVelocity()
+{
+	float speed = carVelocity.X;
+	float delta = tireFR.delta;
+
+	float turningRadius = wheelSeparation/FMath::Tan(FMath::DegreesToRadians(delta));
+	carAngularVelocity = FVector(0.0f, 0.0f, speed/turningRadius);
 }
 
 
