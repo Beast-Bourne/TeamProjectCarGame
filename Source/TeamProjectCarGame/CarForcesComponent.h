@@ -97,6 +97,7 @@ struct FTireInfo
 	UPROPERTY(BlueprintReadOnly)
 	float localLateralForce = 0.0f;
 	float localSelfAligningTorque = 0.0f;
+	UPROPERTY(BlueprintReadWrite)
 	float delta = 0.0f; // The angle between the tires local forward direction and the cars forward direction
 	float offsetFromCentreOfMass = 0.0f; // offset (in x-axis) between the wheel and the car's CoM
 	float trackWidth = 0.0f; // width of the axel
@@ -330,6 +331,9 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FVector carAcceleration;
 
+	UPROPERTY(BlueprintReadOnly)
+	FVector carAngularVelocity;
+
 	// functions for testing purposes
 	UFUNCTION(BlueprintCallable)
 	void ChangeGear(int gear);
@@ -343,7 +347,6 @@ private:
 	float gradient = 0.0f; // vehicles pitch in radians (positive when the front is above the rear)
 	float bank = 0.0f; // vehicles roll in radians (positive when the left is above the right)
 	
-	FVector carAngularVelocity;
 	FVector carAngularAcceleration;
 	
 	// Main body constants
@@ -388,4 +391,5 @@ private:
 
 	// Utility functions
 	void ApplyAllAccelerations(float deltaTime);
+	void CalculateCarAngularVelocity();
 };

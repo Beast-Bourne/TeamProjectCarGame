@@ -227,7 +227,7 @@ bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult
 	return bHit;
 }
 
-void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector ResultantForce, FVector Velocity)
+void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity)
 {
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 
@@ -237,9 +237,10 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
 	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
 
-	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, ResultantForce, Velocity);
-	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, ResultantForce, Velocity);
+	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, Velocity, AngularVelocity);
+	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, Velocity, AngularVelocity);
 
+	/*
 	if (GEngine)
 	{
 		FString Message1 = FString::Printf(TEXT("Wheel Radius: %f"), WheelRadius);
@@ -265,6 +266,7 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 		FString Message7 = FString::Printf(TEXT("RR_SuspensionDirection: X = %f, Y = %f, Z = %f, RL_SuspensionDirection: X = %f, Y = %f, Z = %f,"), RR_SuspensionDirection.X, RR_SuspensionDirection.Y, RR_SuspensionDirection.Z, RL_SuspensionDirection.X, RL_SuspensionDirection.Y, RL_SuspensionDirection.Z);
 		GEngine->AddOnScreenDebugMessage(9, 5.f, FColor::Red, Message7);
 	}
+	*/
 }
 
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -285,7 +287,7 @@ float AVehicle::GetWheelRadius(UStaticMeshComponent* WheelMesh)
 	return BoxExtent.Z;
 }
 
-void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce, FVector Velocity)
+void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector Velocity, FVector AngularVelocity)
 {
 	// Get the force application point
 	FVector ForceApplicationPoint = WheelMesh->GetComponentLocation();
@@ -294,5 +296,7 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	FString Message10 = FString::Printf(TEXT("RR_SuspensionOffset: %f"), ForceMagnitude.X);
 	GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
 	CarBody->AddForce(ForceMagnitude);
+
+	CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);
 
 }
