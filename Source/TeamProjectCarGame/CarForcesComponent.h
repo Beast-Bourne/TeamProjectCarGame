@@ -189,6 +189,7 @@ struct FEngineInfo
 
 	UPROPERTY(BlueprintReadOnly)
 	float engineAngularVelocity = 0.0f;
+	UPROPERTY(BlueprintReadOnly)
 	float engineRPM = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly)
