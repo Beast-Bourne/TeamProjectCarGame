@@ -41,8 +41,6 @@ void UCarForcesComponent::BeginPlay()
 void UCarForcesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	//PerformSimulationFrame(DeltaTime);
 }
 
 // calculates the loads on each wheel of the car and returns a struct containing the results
@@ -126,20 +124,15 @@ FCarForces UCarForcesComponent::CalculateCarForces()
 	float totalLateralForce = 0.0f;
 	float totalRotationalForce = 0.0f;
 	
-	totalLongitudinalForce += tireFR.ReturnLongitudinalForceForCar();
-	totalLongitudinalForce += tireFL.ReturnLongitudinalForceForCar();
-	totalLongitudinalForce += tireRR.ReturnLongitudinalForceForCar();
-	totalLongitudinalForce += tireRL.ReturnLongitudinalForceForCar();
+	totalLongitudinalForce += tireFR.localLongitudinalForce;
+	totalLongitudinalForce += tireFL.localLongitudinalForce;
+	totalLongitudinalForce += tireRR.localLongitudinalForce;
+	totalLongitudinalForce += tireRL.localLongitudinalForce;
 	
-	totalLateralForce += tireFR.ReturnLateralForceForCar();
-	totalLateralForce += tireFL.ReturnLateralForceForCar();
-	totalLateralForce += tireRR.ReturnLateralForceForCar();
-	totalLateralForce += tireRL.ReturnLateralForceForCar();
-
-	//totalRotationalForce += tireFR.ReturnLateralForceForCar() * frontWheelOffset - tireFR.ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
-	//totalRotationalForce += tireFL.ReturnLateralForceForCar() * frontWheelOffset + tireFL.ReturnLongitudinalForceForCar() * 0.5f * frontTrackWidth;
-	//totalRotationalForce += tireRR.ReturnLateralForceForCar() * -rearWheelOffset - tireRR.ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
-	//totalRotationalForce += tireRL.ReturnLateralForceForCar() * -rearWheelOffset + tireRL.ReturnLongitudinalForceForCar() * 0.5f * rearTrackWidth;
+	totalLateralForce += tireFR.localLateralForce;
+	totalLateralForce += tireFL.localLateralForce;
+	totalLateralForce += tireRR.localLateralForce;
+	totalLateralForce += tireRL.localLateralForce;
 
 	carForces.longitudinalForce = totalLongitudinalForce;
 	carForces.lateralForce = totalLateralForce;

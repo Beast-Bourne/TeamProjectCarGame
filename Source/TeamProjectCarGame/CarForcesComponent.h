@@ -128,15 +128,6 @@ struct FTireInfo
 		brake = FBrakeInfo(isFront);
 	}
 
-	float ReturnLongitudinalForceForCar()
-	{
-		return localLongitudinalForce * FMath::Cos(delta) - localLateralForce * FMath::Sin(delta);
-	}
-	float ReturnLateralForceForCar()
-	{
-		return localLongitudinalForce * FMath::Sin(delta) + localLateralForce * FMath::Cos(delta);
-	}
-
 	// sets the local velocity of this tire to the cars velocity and corrects it for any angular velocity about the yaw of the car
 	void CalculateLocalVelocity(float xMultiplier, float yMultiplier, const FVector &carVelocity, float carYawAngularVelocity)
 	{
