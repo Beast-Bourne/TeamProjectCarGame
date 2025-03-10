@@ -89,7 +89,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 
 	// Define the start and end points for the sweep trace
 	FVector StartTrace = Wheel->GetComponentLocation();
-	FVector EndTrace = StartTrace + (Wheel->GetUpVector() * -SuspensionMaxLength);
+	FVector EndTrace = StartTrace + (Wheel->GetUpVector() * -SuspensionMaxLength)/1.5;
 
 	// Use sweep trace instead of line trace
 	bool bHit = SweepTrace(StartTrace, EndTrace, HitResult, DebugDraw);
@@ -123,8 +123,8 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	}
 	else
 	{
-		SuspensionForce = 0;
-		
+		FVector GravityForce = FVector(0, 0, CarBody->GetMass() * GetWorld()->GetGravityZ());
+		CarBody->AddForceAtLocation(GravityForce, WheelMesh->GetComponentLocation());
 	}
 
 	if (Wheel->GetName() == "FR_Suspension")
@@ -234,8 +234,8 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 	// Suspension simulation
 	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
 	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
-	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
-	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
+	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, false);
+	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, false);
 
 	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, Velocity, AngularVelocity);
 	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, Velocity, AngularVelocity);
