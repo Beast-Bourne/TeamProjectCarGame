@@ -111,10 +111,11 @@ void UCarForcesComponent::CalculateWheelForces()
 	float slope = - mass * g * FMath::Sin(gradient);
 	float intermidiate = ((drag + slope + rollResistance)/4.0f);
 
-	tireFR.localLongitudinalForce = intermidiate + (tireFR.brake.CalculateBrakingTorque(brakeInput, tireFR.angularVelocity) / tireFR.radius);
-	tireFL.localLongitudinalForce = intermidiate + (tireFL.brake.CalculateBrakingTorque(brakeInput, tireFL.angularVelocity) / tireFL.radius);
-	tireRR.localLongitudinalForce = intermidiate + ((engineInfo.drivingTorquePerWheel + tireRR.brake.CalculateBrakingTorque(brakeInput, tireRR.angularVelocity)) / tireRR.radius);
-	tireRL.localLongitudinalForce = intermidiate + ((engineInfo.drivingTorquePerWheel + tireRL.brake.CalculateBrakingTorque(brakeInput, tireRL.angularVelocity)) / tireRL.radius);
+	float brakeValue = (engineInfo.currentGear == -1)? throttleInput : brakeInput;
+	tireFR.localLongitudinalForce = intermidiate + (tireFR.brake.CalculateBrakingTorque(brakeValue, tireFR.angularVelocity, engineInfo.currentGear) / tireFR.radius);
+	tireFL.localLongitudinalForce = intermidiate + (tireFL.brake.CalculateBrakingTorque(brakeValue, tireFL.angularVelocity, engineInfo.currentGear) / tireFL.radius);
+	tireRR.localLongitudinalForce = intermidiate + ((engineInfo.drivingTorquePerWheel + tireRR.brake.CalculateBrakingTorque(brakeValue, tireRR.angularVelocity, engineInfo.currentGear)) / tireRR.radius);
+	tireRL.localLongitudinalForce = intermidiate + ((engineInfo.drivingTorquePerWheel + tireRL.brake.CalculateBrakingTorque(brakeValue, tireRL.angularVelocity, engineInfo.currentGear)) / tireRL.radius);
 }
 
 // The rotational force can be used to get the angular acceleration (cars local yaw acceleration) using F = Iα (I: moment of inertia in the Z axis, α: angular acceleration)
@@ -163,7 +164,7 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
 {
 	engineInfo.CalculateEngineTorqueRange();
 	engineInfo.CalculateEngineVelocity(tireRR.angularVelocity, tireRL.angularVelocity, clutchInput, throttleInput);
-	engineInfo.CalculateEngineTorque(clutchInput, throttleInput, carVelocity.X);
+	engineInfo.CalculateEngineTorque(clutchInput, (engineInfo.currentGear == -1)? brakeInput : throttleInput, carVelocity.X);
 	
 	CalculateWheelLoads(0.0f, 0.0f, carAcceleration.X);
 
