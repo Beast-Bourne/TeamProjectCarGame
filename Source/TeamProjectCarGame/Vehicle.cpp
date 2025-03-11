@@ -293,8 +293,8 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	FVector ForceApplicationPoint = WheelMesh->GetComponentLocation();
 	ForceApplicationPoint.Z = GetActorLocation().Z;
 	FVector ForceMagnitude = CarBody->GetForwardVector() * (Velocity.X * 145000);
-	FString Message10 = FString::Printf(TEXT("RR_SuspensionOffset: %f"), ForceMagnitude.X);
-	GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
+	//FString Message10 = FString::Printf(TEXT("RR_SuspensionOffset: %f"), ForceMagnitude.X);
+	//GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
 	CarBody->AddForce(ForceMagnitude);
 
 	CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);

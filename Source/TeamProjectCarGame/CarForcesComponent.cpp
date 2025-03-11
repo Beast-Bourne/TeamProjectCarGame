@@ -220,6 +220,13 @@ void UCarForcesComponent::CheckForAdditionalBraking()
 	if (FMath::Abs(carSpeed) < 1.0f) carVelocity.X = 0.0f;
 }
 
+void UCarForcesComponent::ResetCarSpeed()
+{
+	carVelocity.X = 0.0f;
+	engineInfo.SwapGears(0);
+}
+
+
 
 
 
