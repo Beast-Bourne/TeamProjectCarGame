@@ -49,7 +49,7 @@ struct FBrakeInfo
 		this->BrakeDiameter = (isFrontBrake)? 0.41f : 0.39f; // .41 for front and .39 for rear
 	}
 
-	float CalculateBrakingTorque(float brakeInput, float wheelAngularVel)
+	float CalculateBrakingTorque(float brakeInput, float wheelAngularVel, int gear)
 	{
 		float pressure = maxBrakePressure * brakeInput;
 		float pressureLim = maxBrakePressure * pressureLimit;
@@ -128,15 +128,6 @@ struct FTireInfo
 		brake = FBrakeInfo(isFront);
 	}
 
-	float ReturnLongitudinalForceForCar()
-	{
-		return localLongitudinalForce * FMath::Cos(delta) - localLateralForce * FMath::Sin(delta);
-	}
-	float ReturnLateralForceForCar()
-	{
-		return localLongitudinalForce * FMath::Sin(delta) + localLateralForce * FMath::Cos(delta);
-	}
-
 	// sets the local velocity of this tire to the cars velocity and corrects it for any angular velocity about the yaw of the car
 	void CalculateLocalVelocity(float xMultiplier, float yMultiplier, const FVector &carVelocity, float carYawAngularVelocity)
 	{
@@ -169,16 +160,10 @@ struct FTireInfo
 	}
 };
 
-USTRUCT(BlueprintType)
 struct FCarForces
 {
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
 	float longitudinalForce = 0.0f;
-	UPROPERTY(BlueprintReadOnly)
 	float lateralForce = 0.0f;
-	UPROPERTY(BlueprintReadOnly)
 	float angularForce = 0.0f;
 };
 
@@ -240,7 +225,8 @@ struct FEngineInfo
 	void SwapGears(int newGear)
 	{
 		currentGear = newGear;
-		gearTransmissionRatio = (currentGear == 0)? 0.0f :
+		gearTransmissionRatio = (currentGear == -1)? 3.42f:
+		(currentGear == 0)? 0.0f :
 		(currentGear == 1)? 3.92f:
 		(currentGear == 2)? 2.29f:
 		(currentGear == 3)? 1.55f:
@@ -253,13 +239,14 @@ struct FEngineInfo
 
 	void CalculateTotalGearRatio()
 	{
-		totalTransmissionRatio = (currentGear > 0) ? gearTransmissionRatio * finalGearRatio : 0.0f;
+		totalTransmissionRatio = (currentGear != 0) ? gearTransmissionRatio * finalGearRatio : 0.0f;
 	}
 
 	// calculates the engine's angular velocity (and RPM) based on the clutch/throttle inputs
 	void CalculateEngineVelocity(float wheel1AngularVel, float wheel2AngularVel, float clutchInput, float throttleInput)
 	{
-		float intermediate = FMath::Max((wheel1AngularVel + wheel2AngularVel)/2.0f * totalTransmissionRatio, engineMinSpeed);
+		float averageWheelSpeed = FMath::Abs((wheel1AngularVel + wheel2AngularVel)/2.0f);
+		float intermediate = FMath::Max( averageWheelSpeed * totalTransmissionRatio, engineMinSpeed);
 
 		engineAngularVelocity = (totalTransmissionRatio == 0.0f || clutchInput > 0.5)? (engineMaxSpeed - (1-throttleInput)*(engineMaxSpeed-engineMinSpeed)): FMath::Min(intermediate, engineMaxSpeed);
 		engineRPM = engineAngularVelocity * 60.0f/(PI * 2.0f);
@@ -274,6 +261,7 @@ struct FEngineInfo
 		currentTorque = (carVelocity < 0.0f)? FMath::Max(0.0f, intermediate) : intermediate;
 
 		drivingTorquePerWheel = (currentTorque * transmissionEfficiency * totalTransmissionRatio)/2.0f * -(FMath::Tanh(engineAngularVelocity-(engineMaxSpeed-3.0f))-1)/2.0f;
+		drivingTorquePerWheel *= (currentGear == -1)? -1.0f : 1.0f;
 	}
 };
 
@@ -335,15 +323,13 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FVector carAngularVelocity;
 
-	// functions for testing purposes
-	UFUNCTION(BlueprintCallable)
-	void ChangeGear(int gear);
+	// blueprintable functions
 	UFUNCTION(BlueprintCallable)
 	void PerformSimulationFrame(float deltaTime);
 	
 private:
 	// non constants
-	float velocity = 0.0f; // vehicles forward velocity in m/s
+	float carSpeed = 0.0f; // vehicles forward velocity in mph
 	float acceleration = 0.0f; // vehicles forward acceleration in m/s^2
 	float gradient = 0.0f; // vehicles pitch in radians (positive when the front is above the rear)
 	float bank = 0.0f; // vehicles roll in radians (positive when the left is above the right)
@@ -393,4 +379,6 @@ private:
 	// Utility functions
 	void ApplyAllAccelerations(float deltaTime);
 	void CalculateCarAngularVelocity();
+	void CheckForGearShift();
+	void CheckForAdditionalBraking();
 };
