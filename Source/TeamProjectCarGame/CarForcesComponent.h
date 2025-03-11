@@ -323,15 +323,13 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FVector carAngularVelocity;
 
-	// functions for testing purposes
-	UFUNCTION(BlueprintCallable)
-	void ChangeGear(int gear);
+	// blueprintable functions
 	UFUNCTION(BlueprintCallable)
 	void PerformSimulationFrame(float deltaTime);
 	
 private:
 	// non constants
-	float velocity = 0.0f; // vehicles forward velocity in m/s
+	float carSpeed = 0.0f; // vehicles forward velocity in mph
 	float acceleration = 0.0f; // vehicles forward acceleration in m/s^2
 	float gradient = 0.0f; // vehicles pitch in radians (positive when the front is above the rear)
 	float bank = 0.0f; // vehicles roll in radians (positive when the left is above the right)
@@ -381,4 +379,6 @@ private:
 	// Utility functions
 	void ApplyAllAccelerations(float deltaTime);
 	void CalculateCarAngularVelocity();
+	void CheckForGearShift();
+	void CheckForAdditionalBraking();
 };
