@@ -326,6 +326,8 @@ public:
 	// blueprintable functions
 	UFUNCTION(BlueprintCallable)
 	void PerformSimulationFrame(float deltaTime);
+	UFUNCTION(BlueprintCallable)
+	void ResetCarSpeed();
 	
 private:
 	// non constants
