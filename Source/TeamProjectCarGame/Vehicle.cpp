@@ -114,13 +114,30 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 
 	// Apply force if hit
 	if (bHit)
-	{
-		CarBody->AddForceAtLocation(SuspensionForce * SpringDirection, HitResult.ImpactPoint);
-		SuspensionPreviousLength = SuspensionCurrentLength;
-
-		FVector NewWheelLocation = HitResult.Location;
-		WheelMesh->SetWorldLocation(NewWheelLocation);
-	}
+    	{
+    		CarBody->AddForceAtLocation(SuspensionForce * SpringDirection, HitResult.ImpactPoint);
+    		SuspensionPreviousLength = SuspensionCurrentLength;
+    
+    		FVector NewWorldWheelLocation = HitResult.Location;
+    
+    		// Calculate min and max Z bounds for the wheel relative to the suspension
+    		float MaxCompressionZ = Wheel->GetComponentLocation().Z - WheelRadius; 
+    		float MaxExtensionZ = SuspensionRest->GetComponentLocation().Z - SuspensionMaxLength; 
+    
+    		// Clamp the Z position of the wheel to get rid of wheels clipping through the body
+    		NewWorldWheelLocation.Z = FMath::Clamp(NewWorldWheelLocation.Z, MaxExtensionZ, MaxCompressionZ);
+    
+    		// World location to relative
+    		if (WheelMesh->GetAttachParent())
+    		{
+    			FVector NewRelativeLocation = WheelMesh->GetAttachParent()->GetComponentTransform().InverseTransformPosition(NewWorldWheelLocation);
+    			WheelMesh->SetRelativeLocation(NewRelativeLocation);
+    		}
+    		else
+    		{
+    			WheelMesh->SetWorldLocation(NewWorldWheelLocation);
+    		}
+    	}
 	else
 	{
 		FVector GravityForce = FVector(0, 0, CarBody->GetMass() * GetWorld()->GetGravityZ());
