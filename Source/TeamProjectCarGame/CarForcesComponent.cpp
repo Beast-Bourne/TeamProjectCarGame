@@ -217,7 +217,7 @@ void UCarForcesComponent::CheckForAdditionalBraking()
 {
 	if (throttleInput > 0.0f || brakeInput > 0.0f) return;
 
-	if (FMath::Abs(carSpeed) < 1.0f) carVelocity.X = 0.0f;
+	if (FMath::Abs(carSpeed) < 1.0f) ResetCarSpeed();
 }
 
 void UCarForcesComponent::ResetCarSpeed()
