@@ -104,9 +104,19 @@ void UCarForcesComponent::CalculateWheelsLocalVelocities()
 // calculates the roll resistance using F = f * m * g. Min(1, velocity) is used to remove the rolling resistance when the car is stationary
 // * -Sign(velocity) makes sure the drag and roll resistance are in the opposite direction
 // calculates the resistance due to the car's weight when on a slope using F = m * g * sin(θ)
-void UCarForcesComponent::CalculateWheelForces()
+void UCarForcesComponent::CalculateWheelForces(bool carIsGrounded)
 {
 	float drag = 0.5f * airDensity * dragCoefficient * frontArea * carVelocity.X * carVelocity.X * -FMath::Sign(carVelocity.X);
+
+	if (!carIsGrounded)
+	{
+		tireFR.localLongitudinalForce = drag;
+		tireFL.localLongitudinalForce = drag;
+		tireRR.localLongitudinalForce = drag;
+		tireRL.localLongitudinalForce = drag;
+		return;
+	}
+	
 	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1.0f, FMath::Abs(carVelocity.X)) * -FMath::Sign(carVelocity.X);
 	float slope = - mass * g * FMath::Sin(gradient);
 	float intermidiate = ((drag + slope + rollResistance)/4.0f);
@@ -172,14 +182,14 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime, bool carIsGrou
 	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
 	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
 
-	CalculateWheelForces();
+	CalculateWheelForces(carIsGrounded);
 	FCarForces forces = CalculateCarForces();
 	carAcceleration = FVector(forces.longitudinalForce/mass, forces.lateralForce/mass, 0.0f);
 	carAngularAcceleration = FVector(0.0f, 0.0f, forces.angularForce/mass);
 
 	CalculateCarAngularVelocity();
 	
-	if (carIsGrounded) ApplyAllAccelerations(deltaTime);
+	ApplyAllAccelerations(deltaTime);
 }
 
 void UCarForcesComponent::CheckForGearShift()
