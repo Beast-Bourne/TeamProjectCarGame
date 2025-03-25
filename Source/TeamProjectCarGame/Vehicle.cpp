@@ -138,7 +138,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
     			WheelMesh->SetWorldLocation(NewWorldWheelLocation);
     		}
     	}
-	else
+	else if (carIsGrounded)
 	{
 		FVector GravityForce = FVector(0, 0, CarBody->GetMass() * GetWorld()->GetGravityZ());
 		CarBody->AddForceAtLocation(GravityForce, WheelMesh->GetComponentLocation());
@@ -244,16 +244,17 @@ bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult
 	return bHit;
 }
 
-void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity)
+void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity, bool carGrounded)
 {
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
-
+	carIsGrounded = carGrounded;
 	// Suspension simulation
 	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
 	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
 	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, false);
 	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, false);
 
+	
 	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, Velocity, AngularVelocity);
 	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, Velocity, AngularVelocity);
 
@@ -314,6 +315,6 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	//GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
 	CarBody->AddForce(ForceMagnitude);
 
-	CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);
+	if (carIsGrounded) CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);
 
 }
