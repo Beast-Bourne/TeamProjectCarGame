@@ -254,7 +254,6 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, false);
 	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, false);
 
-	
 	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, Velocity, AngularVelocity);
 	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, Velocity, AngularVelocity);
 
