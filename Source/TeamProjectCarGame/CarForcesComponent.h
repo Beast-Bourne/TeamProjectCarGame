@@ -375,7 +375,7 @@ private:
 	FWheelLoads CalculateStaticWheelLoads();
 
 	// Car force functions
-	void CalculateWheelForces(bool carIsGrounded);
+	void CalculateWheelForces();
 	FCarForces CalculateCarForces();
 
 	// Utility functions
