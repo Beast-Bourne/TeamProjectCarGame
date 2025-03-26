@@ -157,7 +157,7 @@ void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 	tireRL.angularVelocity = carVelocity.X/ tireRL.radius;
 }
 
-void UCarForcesComponent::PerformSimulationFrame(float deltaTime, bool carIsGrounded)
+void UCarForcesComponent::PerformSimulationFrame(float deltaTime)
 {
 	CheckForGearShift();
 	
@@ -179,7 +179,7 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime, bool carIsGrou
 
 	CalculateCarAngularVelocity();
 	
-	if (carIsGrounded) ApplyAllAccelerations(deltaTime);
+	ApplyAllAccelerations(deltaTime);
 }
 
 void UCarForcesComponent::CheckForGearShift()

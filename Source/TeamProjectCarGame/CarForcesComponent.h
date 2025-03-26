@@ -325,7 +325,7 @@ public:
 
 	// blueprintable functions
 	UFUNCTION(BlueprintCallable)
-	void PerformSimulationFrame(float deltaTime, bool carIsGrounded);
+	void PerformSimulationFrame(float deltaTime);
 	UFUNCTION(BlueprintCallable)
 	void ResetCarSpeed();
 	
