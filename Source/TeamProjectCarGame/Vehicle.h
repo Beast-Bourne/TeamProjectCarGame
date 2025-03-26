@@ -117,6 +117,8 @@ public:
 	float SteeringInterpSpeed = 5.0f;
 	float CarTopSpeed = 2000000.0f;
 
+	bool carIsGrounded;
+
 
 	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest, float SuspensionStrength, float WheelLoad, bool DebugDraw);
 	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce, FVector Velocity);
@@ -125,7 +127,7 @@ public:
 	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
 
 	UFUNCTION(BlueprintCallable)
-	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity);
+	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity, bool carIsGrounded);
 
 };
 
