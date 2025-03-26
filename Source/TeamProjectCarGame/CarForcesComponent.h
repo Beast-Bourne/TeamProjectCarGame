@@ -325,7 +325,7 @@ public:
 
 	// blueprintable functions
 	UFUNCTION(BlueprintCallable)
-	void PerformSimulationFrame(float deltaTime);
+	void PerformSimulationFrame(float deltaTime, bool carIsGrounded);
 	UFUNCTION(BlueprintCallable)
 	void ResetCarSpeed();
 	
@@ -375,7 +375,7 @@ private:
 	FWheelLoads CalculateStaticWheelLoads();
 
 	// Car force functions
-	void CalculateWheelForces();
+	void CalculateWheelForces(bool carIsGrounded);
 	FCarForces CalculateCarForces();
 
 	// Utility functions
