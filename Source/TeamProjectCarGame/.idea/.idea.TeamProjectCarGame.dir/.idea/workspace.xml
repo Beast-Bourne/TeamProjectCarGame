@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5e8cad04-5571-4a90-978c-6a33eee3364e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../../Content/VehicleStuff/BP_Vehicle.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/../../Content/VehicleStuff/BP_Vehicle.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../Content/Vehicles/PhysicsMaterials/NonSlippery.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/../../Content/Vehicles/PhysicsMaterials/NonSlippery.uasset" afterDir="false" />
-    </list>
+    <list default="true" id="5e8cad04-5571-4a90-978c-6a33eee3364e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -27,7 +24,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "SuspensionTesting",
+    "git-widget-placeholder": "CollisionFixAndLevelFlow",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -53,6 +50,7 @@
       <updated>1739463318592</updated>
       <workItem from="1739463347366" duration="576000" />
       <workItem from="1739464208538" duration="239000" />
+      <workItem from="1743066402821" duration="977000" />
     </task>
     <servers />
   </component>
