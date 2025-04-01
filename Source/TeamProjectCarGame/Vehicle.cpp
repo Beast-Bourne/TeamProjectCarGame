@@ -131,7 +131,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
     		if (WheelMesh->GetAttachParent())
     		{
     			FVector NewRelativeLocation = WheelMesh->GetAttachParent()->GetComponentTransform().InverseTransformPosition(NewWorldWheelLocation);
-    			WheelMesh->SetRelativeLocation(NewRelativeLocation);
+    			WheelMesh->SetRelativeLocation(FVector(0,0, NewRelativeLocation.Z));
     		}
     		else
     		{
@@ -213,31 +213,29 @@ bool AVehicle::LineTrace(FVector StartLocation, FVector EndLocation, FHitResult&
 
 bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const
 {
-	// Define a sphere radius (should be smaller than or equal to the wheel radius)
-	float SweepRadius = WheelRadius;
-
-	// Collision query parameters
+	// Capsule Shape
+	float CapsuleRadius = WheelRadius/2; 
+	float CapsuleHalfHeight = WheelRadius;
+	
 	FCollisionQueryParams CollisionParams;
 	CollisionParams.AddIgnoredActor(this);
 
-	// Define the shape of the sweep (sphere)
-	FCollisionShape Sphere = FCollisionShape::MakeSphere(SweepRadius);
-
-	// Perform the sweep trace
+	// Shape definition
+	FCollisionShape Capsule = FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight);
+	
 	bool bHit = GetWorld()->SweepSingleByChannel(
 		OutHitResult, 
 		StartLocation, 
 		EndLocation, 
-		FQuat::Identity,  // No rotation for a sphere
+		FQuat::Identity,
 		ECC_Visibility, 
-		Sphere, 
+		Capsule, 
 		CollisionParams
 	);
-
-	// Debug visualization
+	
 	if (bDrawDebug)
 	{
-		DrawDebugSphere(GetWorld(), OutHitResult.Location, SweepRadius, 12, bHit ? FColor::Green : FColor::Red, false, 1.0f);
+		DrawDebugCapsule(GetWorld(), OutHitResult.Location, CapsuleHalfHeight, CapsuleRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 1.0f);
 		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Blue, false, 1.0f, 0, 1.0f);
 	}
 
