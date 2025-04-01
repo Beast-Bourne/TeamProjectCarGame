@@ -131,7 +131,7 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
     		if (WheelMesh->GetAttachParent())
     		{
     			FVector NewRelativeLocation = WheelMesh->GetAttachParent()->GetComponentTransform().InverseTransformPosition(NewWorldWheelLocation);
-    			WheelMesh->SetRelativeLocation(NewRelativeLocation);
+    			WheelMesh->SetRelativeLocation(FVector(0,0, NewRelativeLocation.Z));
     		}
     		else
     		{
