@@ -104,22 +104,24 @@ void UCarForcesComponent::CalculateWheelsLocalVelocities()
 // calculates the roll resistance using F = f * m * g. Min(1, velocity) is used to remove the rolling resistance when the car is stationary
 // * -Sign(velocity) makes sure the drag and roll resistance are in the opposite direction
 // calculates the resistance due to the car's weight when on a slope using F = m * g * sin(θ)
-void UCarForcesComponent::CalculateWheelForces(bool carIsGrounded)
+void UCarForcesComponent::CalculateWheelForces(bool carIsGrounded, bool carIsWallDragging, bool frontWallCollision, bool backWallCollision)
 {
 	float drag = 0.5f * airDensity * dragCoefficient * frontArea * carVelocity.X * carVelocity.X * -FMath::Sign(carVelocity.X);
+	float collisionForce = ((frontWallCollision && carVelocity.X > 0) || (backWallCollision && carVelocity.X < 0))? 0.5f * mass * carVelocity.X * carVelocity.X * -FMath::Sign(carVelocity.X) / 0.5f : 0.0f;
 
 	if (!carIsGrounded)
 	{
-		tireFR.localLongitudinalForce = drag;
-		tireFL.localLongitudinalForce = drag;
-		tireRR.localLongitudinalForce = drag;
-		tireRL.localLongitudinalForce = drag;
+		tireFR.localLongitudinalForce = drag + collisionForce/4.0f;
+		tireFL.localLongitudinalForce = drag + collisionForce/4.0f;
+		tireRR.localLongitudinalForce = drag + collisionForce/4.0f;
+		tireRL.localLongitudinalForce = drag + collisionForce/4.0f;
 		return;
 	}
 	
 	float rollResistance = rollResistanceCoefficient * mass * g * FMath::Min(1.0f, FMath::Abs(carVelocity.X)) * -FMath::Sign(carVelocity.X);
 	float slope = - mass * g * FMath::Sin(gradient);
-	float intermidiate = ((drag + slope + rollResistance)/4.0f);
+	float wallDrag = (carIsWallDragging)? FMath::Abs(carVelocity.X) * -FMath::Sign(carVelocity.X) * 500.0f: 0.0f;
+	float intermidiate = ((drag + slope + rollResistance + wallDrag + collisionForce)/4.0f);
 
 	float brakeValue = (engineInfo.currentGear == -1)? throttleInput : brakeInput;
 	tireFR.localLongitudinalForce = intermidiate + (tireFR.brake.CalculateBrakingTorque(brakeValue, tireFR.angularVelocity, engineInfo.currentGear) / tireFR.radius);
@@ -167,7 +169,7 @@ void UCarForcesComponent::ApplyAllAccelerations(float deltaTime)
 	tireRL.angularVelocity = carVelocity.X/ tireRL.radius;
 }
 
-void UCarForcesComponent::PerformSimulationFrame(float deltaTime, bool carIsGrounded)
+void UCarForcesComponent::PerformSimulationFrame(float deltaTime, bool carIsGrounded, bool carIsWallDragging, bool frontWallCollision, bool backWallCollision)
 {
 	CheckForGearShift();
 	
@@ -182,7 +184,7 @@ void UCarForcesComponent::PerformSimulationFrame(float deltaTime, bool carIsGrou
 	tireRR.CalculateLocalVelocity(-1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
 	tireRL.CalculateLocalVelocity(1.0f, -1.0f, carVelocity, carAngularVelocity.Z);
 
-	CalculateWheelForces(carIsGrounded);
+	CalculateWheelForces(carIsGrounded, carIsWallDragging, frontWallCollision, backWallCollision);
 	FCarForces forces = CalculateCarForces();
 	carAcceleration = FVector(forces.longitudinalForce/mass, forces.lateralForce/mass, 0.0f);
 	carAngularAcceleration = FVector(0.0f, 0.0f, forces.angularForce/mass);
