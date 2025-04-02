@@ -129,12 +129,13 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
     
     		// Clamp the Z position of the wheel to get rid of wheels clipping through the body
     		NewWorldWheelLocation.Z = FMath::Clamp(NewWorldWheelLocation.Z, MaxExtensionZ, MaxCompressionZ);
+			FVector WheelRelativeLocation = WheelMesh->GetRelativeLocation();
     
     		// World location to relative
     		if (WheelMesh->GetAttachParent())
     		{
     			FVector NewRelativeLocation = WheelMesh->GetAttachParent()->GetComponentTransform().InverseTransformPosition(NewWorldWheelLocation);
-    			WheelMesh->SetRelativeLocation(FVector(0,0, NewRelativeLocation.Z));
+    			WheelMesh->SetRelativeLocation(FVector(0, WheelRelativeLocation.Y, NewRelativeLocation.Z));
     		}
     		else
     		{
