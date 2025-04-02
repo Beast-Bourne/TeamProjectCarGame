@@ -87,12 +87,15 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
 	FHitResult HitResult;
 	WheelRadius = GetWheelRadius(WheelMesh);
 
+	// Get the car body's rotation
+	FRotator CarRotation = CarBody->GetComponentRotation();
+
 	// Define the start and end points for the sweep trace
 	FVector StartTrace = Wheel->GetComponentLocation();
-	FVector EndTrace = StartTrace + (Wheel->GetUpVector() * -SuspensionMaxLength)/1.5;
+	FVector EndTrace = StartTrace + (Wheel->GetUpVector() * -SuspensionMaxLength) / 1.5;
 
 	// Use sweep trace instead of line trace
-	bool bHit = SweepTrace(StartTrace, EndTrace, HitResult, DebugDraw);
+	bool bHit = SweepTrace(StartTrace, EndTrace, HitResult, DebugDraw, CarRotation);
 
 	// Compute suspension length
 	SuspensionCurrentLength = bHit ? (HitResult.Distance - WheelRadius) : SuspensionMaxLength;
@@ -211,46 +214,47 @@ bool AVehicle::LineTrace(FVector StartLocation, FVector EndLocation, FHitResult&
 	
 }
 
-bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const
+bool AVehicle::SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug, FRotator Rotation) const
 {
 	// Capsule Shape
-	float CapsuleRadius = WheelRadius/2; 
+	float CapsuleRadius = WheelRadius / 2;
 	float CapsuleHalfHeight = WheelRadius;
-	
+
 	FCollisionQueryParams CollisionParams;
 	CollisionParams.AddIgnoredActor(this);
 
-	// Shape definition
+	// Shape definition with rotation
 	FCollisionShape Capsule = FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight);
-	
+
 	bool bHit = GetWorld()->SweepSingleByChannel(
-		OutHitResult, 
-		StartLocation, 
-		EndLocation, 
-		FQuat::Identity,
-		ECC_Visibility, 
-		Capsule, 
+		OutHitResult,
+		StartLocation,
+		EndLocation,
+		Rotation.Quaternion(), // Apply car body rotation
+		ECC_Visibility,
+		Capsule,
 		CollisionParams
 	);
-	
+
 	if (bDrawDebug)
 	{
-		DrawDebugCapsule(GetWorld(), OutHitResult.Location, CapsuleHalfHeight, CapsuleRadius, FQuat::Identity, bHit ? FColor::Green : FColor::Red, false, 1.0f);
+		DrawDebugCapsule(GetWorld(), OutHitResult.Location, CapsuleHalfHeight, CapsuleRadius, Rotation.Quaternion(), bHit ? FColor::Green : FColor::Red, false, 1.0f);
 		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Blue, false, 1.0f, 0, 1.0f);
 	}
 
 	return bHit;
 }
 
+
 void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity, bool carGrounded)
 {
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 	carIsGrounded = carGrounded;
 	// Suspension simulation
-	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
-	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
-	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, false);
-	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, false);
+	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, true);
+	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, true);
+	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
+	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
 
 	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, Velocity, AngularVelocity);
 	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, Velocity, AngularVelocity);
