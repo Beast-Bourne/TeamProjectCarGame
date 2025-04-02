@@ -251,10 +251,10 @@ void AVehicle::RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float 
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 	carIsGrounded = carGrounded;
 	// Suspension simulation
-	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, true);
-	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, true);
-	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, true);
-	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, true);
+	SuspensionCast(FL_SuspensionMount, FL_TireMesh, FL_SuspensionRest, FrontSuspensionStrength, FL_WheelLoad, false);
+	SuspensionCast(FR_SuspensionMount, FR_TireMesh, FR_SuspensionRest, FrontSuspensionStrength, FR_WheelLoad, false);
+	SuspensionCast(RL_SuspensionMount, RL_TireMesh, RL_SuspensionRest, RearSuspensionStrength, RL_WheelLoad, false);
+	SuspensionCast(RR_SuspensionMount, RR_TireMesh, RR_SuspensionRest, RearSuspensionStrength, RR_WheelLoad, false);
 
 	ApplyAccelerationForce(RL_SuspensionMount, RL_TireMesh, Velocity, AngularVelocity);
 	ApplyAccelerationForce(RR_SuspensionMount, RR_TireMesh, Velocity, AngularVelocity);
