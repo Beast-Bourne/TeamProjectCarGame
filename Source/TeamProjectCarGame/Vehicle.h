@@ -118,13 +118,14 @@ public:
 	float CarTopSpeed = 2000000.0f;
 
 	bool carIsGrounded;
+	FVector WheelRelativeLocation;
 
 
 	void SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest, float SuspensionStrength, float WheelLoad, bool DebugDraw);
 	void ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector ResultantForce, FVector Velocity);
 	void Debug();
 	bool LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug = false) const;
-	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const;
+	bool SweepTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug, FRotator Rotation) const;
 
 	UFUNCTION(BlueprintCallable)
 	void RunSimulationFrame(float FR_WheelLoad, float FL_WheelLoad, float RR_WheelLoad, float RL_WheelLoad, FVector Velocity, FVector AngularVelocity, bool carIsGrounded);
