@@ -322,6 +322,8 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	//GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
 	CarBody->AddForce(ForceMagnitude);
 
+	CarBody->SetCenterOfMass(FVector(-140,0,0));
 	if (carIsGrounded) CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);
+	CarBody->SetCenterOfMass(FVector(0,0,0));
 
 }
