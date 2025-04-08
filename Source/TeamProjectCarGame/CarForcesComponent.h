@@ -137,19 +137,6 @@ struct FTireInfo
 		localVelocity = FVector(xValue, yValue, zValue);
 	}
 
-	float CalculateSlipFrictionFactor()
-	{
-		if (slipConditionFactor < 1.0f)
-		{
-			return -threadStiffness * (-1.0f * slipConditionFactor - FMath::Pow(slipConditionFactor, 2.0f/3.0f)) * load * 9.81f;
-		}
-
-		float exponent = -0.01f * (slipConditionFactor -1.0f) * (slipConditionFactor -1.0f);
-		float part1 = (slidingFrictionCoefficient + (1-slidingFrictionCoefficient) * FMath::Exp(exponent));
-		float part2 = staticFrictionCoefficient * load * 9.81f / combinedSlipFactor;
-		return part1 * part2;
-	}
-
 	void UpdateForces(float resistForce, float drivingForce)
 	{
 		localLongitudinalForce = resistForce + drivingForce;
@@ -328,6 +315,34 @@ public:
 	void PerformSimulationFrame(float deltaTime, bool carIsGrounded, bool carIsWallDragging, bool frontWallCollision, bool backWallCollision);
 	UFUNCTION(BlueprintCallable)
 	void ResetCarSpeed();
+
+	// Main body constants
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float mass = 1450.0f; // mass in Kg
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float centreOfMassHeight = 0.48f; // height of the centre of mass above the ground in meters
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float wheelSeparation = 2.457f; // horizontal distance between the front and rear axles in meters
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float frontWheelOffset = 0.957f; // horizontal offset from the centre of gravity in meters
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float rearWheelOffset = 1.5f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float frontTrackWidth = 1.6f; // the width of the front axle in meters
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float rearTrackWidth = 1.56f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float rollCentreHeight = 0.1f; // height of the roll centre above the ground in meters
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float frontSuspensionStiffness = 120000.0f; // suspension in N/m
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float rearSuspensionStiffness = 200000.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float frontArea = 2.2f; // frontal area in m^2
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float dragCoefficient = 0.39f; // the drag coefficient used for calculating the air resistance
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float rollResistanceCoefficient = 0.012f; // the rolling resistance coefficient used for calculating the roll resistance force
 	
 private:
 	// non constants
@@ -339,22 +354,9 @@ private:
 	FVector carAngularAcceleration;
 	
 	// Main body constants
-	const float mass = 1450.0f; // mass in Kg
-	const float centreOfMassHeight = 0.48f; // height of the centre of mass above the ground in meters
-	const float wheelSeparation = 2.457f; // horizontal distance between the front and rear axles in meters
-	const float frontWheelOffset = 0.957f; // horizontal offset from the centre of gravity in meters
-	const float rearWheelOffset = 1.5f;
-	const float frontTrackWidth = 1.6f; // the width of the front axle in meters
-	const float rearTrackWidth = 1.56f;
-	const float rollCentreHeight = 0.1f; // height of the roll centre above the ground in meters
-	const float frontSuspensionStiffness = 120000.0f; // suspension in N/m
-	const float rearSuspensionStiffness = 200000.0f;
 	const float momentOfInertiaX = 2000.0f; // moment of inertia about the X axis in kg m^2
 	const float momentOfInertiaY = 3000.0f;
 	const float momentOfInertiaZ = 5000.0f;
-	const float frontArea = 2.2f; // frontal area in m^2
-	const float dragCoefficient = 0.39f; // the drag coefficient used for calculating the air resistance
-	const float rollResistanceCoefficient = 0.012f; // the rolling resistance coefficient used for calculating the roll resistance force
 	const float airDensity = 1.225f; // density of the air in kg/m^3
 	const float g = 9.81f; // gravity
 
