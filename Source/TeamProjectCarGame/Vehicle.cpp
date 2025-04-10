@@ -322,8 +322,21 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	//GEngine->AddOnScreenDebugMessage(10, 5.f, FColor::Red, Message10);
 	CarBody->AddForce(ForceMagnitude);
 
-	CarBody->SetCenterOfMass(FVector(-140,0,0));
+	// Fake lateral friction
+	FVector fVelocity = CarBody->GetPhysicsLinearVelocity();
+	FVector RightVector = CarBody->GetRightVector();
+	FVector ForwardVector = CarBody->GetForwardVector();
+
+	float SideSpeed = FVector::DotProduct(fVelocity, RightVector);
+	float LateralGripStrength = 5000.0f; // tweak for more/less grip
+
+	FVector LateralFriction = -RightVector * SideSpeed * LateralGripStrength;
+	// Optionally clamp max force
+	LateralFriction = LateralFriction.GetClampedToMaxSize(750000.f);
+
+	CarBody->AddForce(LateralFriction);
+
+
 	if (carIsGrounded) CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);
-	CarBody->SetCenterOfMass(FVector(0,0,0));
 
 }
