@@ -328,8 +328,7 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	FVector ForwardVector = CarBody->GetForwardVector();
 
 	float SideSpeed = FVector::DotProduct(fVelocity, RightVector);
-	float LateralGripStrength = 5000.0f; // tweak for more/less grip
-
+	
 	FVector LateralFriction = -RightVector * SideSpeed * LateralGripStrength;
 	// Optionally clamp max force
 	LateralFriction = LateralFriction.GetClampedToMaxSize(750000.f);

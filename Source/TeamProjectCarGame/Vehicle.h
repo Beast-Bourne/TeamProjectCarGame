@@ -66,6 +66,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	float Damper{ 1.0f };
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grip")
+	float LateralGripStrength = 5000.0f;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
