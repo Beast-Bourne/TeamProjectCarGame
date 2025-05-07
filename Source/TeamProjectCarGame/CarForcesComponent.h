@@ -185,9 +185,34 @@ struct FEngineInfo
 	UPROPERTY(BlueprintReadOnly)
 	float drivingTorquePerWheel = 0.0f;
 
+	float gearR = 0.0f;
+	float gear1 = 0.0f;
+	float gear2 = 0.0f;
+	float gear3 = 0.0f;
+	float gear4 = 0.0f;
+	float gear5 = 0.0f;
+	float gear6 = 0.0f;
+
 	// initialises variables based on the car being stationary, turned on and in gear 1
 	FEngineInfo()
 	{
+		SwapGears(0);
+		CalculateEngineVelocity(0,0,0,0);
+		CalculateEngineTorqueRange();
+	}
+
+	FEngineInfo(float gearR, float gear1, float gear2, float gear3, float gear4, float gear5, float gear6, float engineMinSpeed, float engineMaxSpeed)
+	{
+		this->gearR = gearR;
+		this->gear1 = gear1;
+		this->gear2 = gear2;
+		this->gear3 = gear3;
+		this->gear4 = gear4;
+		this->gear5 = gear5;
+		this->gear6 = gear6;
+		this->engineMinSpeed = engineMinSpeed;
+		this->engineMaxSpeed = engineMaxSpeed;
+
 		SwapGears(0);
 		CalculateEngineVelocity(0,0,0,0);
 		CalculateEngineTorqueRange();
@@ -212,14 +237,14 @@ struct FEngineInfo
 	void SwapGears(int newGear)
 	{
 		currentGear = newGear;
-		gearTransmissionRatio = (currentGear == -1)? 3.42f:
+		gearTransmissionRatio = (currentGear == -1)? gearR:
 		(currentGear == 0)? 0.0f :
-		(currentGear == 1)? 3.92f:
-		(currentGear == 2)? 2.29f:
-		(currentGear == 3)? 1.55f:
-		(currentGear == 4)? 1.18f:
-		(currentGear == 5)? 0.94f:
-		0.79f;
+		(currentGear == 1)? gear1:
+		(currentGear == 2)? gear2:
+		(currentGear == 3)? gear3:
+		(currentGear == 4)? gear4:
+		(currentGear == 5)? gear5:
+		gear6;
 
 		CalculateTotalGearRatio();
 	}
@@ -317,32 +342,50 @@ public:
 	void ResetCarSpeed();
 
 	// Main body constants
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|General")
 	float mass = 1450.0f; // mass in Kg
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|General")
 	float centreOfMassHeight = 0.48f; // height of the centre of mass above the ground in meters
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float wheelSeparation = 2.457f; // horizontal distance between the front and rear axles in meters
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float frontWheelOffset = 0.957f; // horizontal offset from the centre of gravity in meters
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float rearWheelOffset = 1.5f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float frontTrackWidth = 1.6f; // the width of the front axle in meters
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float rearTrackWidth = 1.56f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|General")
 	float rollCentreHeight = 0.1f; // height of the roll centre above the ground in meters
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float frontSuspensionStiffness = 120000.0f; // suspension in N/m
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float rearSuspensionStiffness = 200000.0f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|General")
 	float frontArea = 2.2f; // frontal area in m^2
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|General")
 	float dragCoefficient = 0.39f; // the drag coefficient used for calculating the air resistance
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Wheels")
 	float rollResistanceCoefficient = 0.012f; // the rolling resistance coefficient used for calculating the roll resistance force
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float reverseGearRatio = 3.42f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float FirstGearRatio = 3.92f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float SecondGearRatio = 2.29f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float ThirdGearRatio = 1.55f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float ForthGearRatio = 1.18f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float FifthGearRatio = 0.94f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float SixthGearRatio = 0.79f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float minEngineSpeed = 89.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, category= "Variables|Gears")
+	float maxEngineSpeed = 943.0f;
 	
 private:
 	// non constants

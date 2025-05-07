@@ -13,6 +13,8 @@ UCarForcesComponent::UCarForcesComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
+	engineInfo = FEngineInfo(reverseGearRatio, FirstGearRatio, SecondGearRatio, ThirdGearRatio, ForthGearRatio, FifthGearRatio, SixthGearRatio, minEngineSpeed, maxEngineSpeed);
+	
 	carVelocity = FVector::ZeroVector;
 	carAcceleration = FVector::ZeroVector;
 	carAngularVelocity = FVector::ZeroVector;
@@ -212,8 +214,8 @@ void UCarForcesComponent::CheckForGearShift()
 
 	int gearUp = FMath::Clamp(engineInfo.currentGear + 1, 0, 5);
 	int gearDown = FMath::Clamp(engineInfo.currentGear - 1, 1, 5);
-	if (engineInfo.engineRPM > 8500.0f) engineInfo.SwapGears(gearUp);
-	else if (engineInfo.engineRPM < 5000.0f) engineInfo.SwapGears(gearDown);
+	if (engineInfo.engineAngularVelocity > maxEngineSpeed*0.9f) engineInfo.SwapGears(gearUp);
+	else if (engineInfo.engineAngularVelocity < maxEngineSpeed*0.6f) engineInfo.SwapGears(gearDown);
 }
 
 void UCarForcesComponent::CalculateCarAngularVelocity()
