@@ -333,7 +333,7 @@ void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshCompone
 	// Optionally clamp max force
 	LateralFriction = LateralFriction.GetClampedToMaxSize(750000.f);
 
-	CarBody->AddForce(LateralFriction);
+	//CarBody->AddForce(LateralFriction);
 
 
 	if (carIsGrounded) CarBody->AddTorqueInRadians(AngularVelocity, NAME_None,true);
