@@ -215,7 +215,7 @@ void UCarForcesComponent::CheckForGearShift()
 	int gearUp = FMath::Clamp(engineInfo.currentGear + 1, 0, 5);
 	int gearDown = FMath::Clamp(engineInfo.currentGear - 1, 1, 5);
 	if (engineInfo.engineAngularVelocity > maxEngineSpeed*0.9f) engineInfo.SwapGears(gearUp);
-	else if (engineInfo.engineAngularVelocity < maxEngineSpeed*0.6f) engineInfo.SwapGears(gearDown);
+	else if (engineInfo.engineAngularVelocity < maxEngineSpeed*0.5f) engineInfo.SwapGears(gearDown);
 }
 
 void UCarForcesComponent::CalculateCarAngularVelocity()
