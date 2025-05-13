@@ -65,6 +65,8 @@ public:
 	float RearSuspensionStrength{ 150.0f };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
 	float Damper{ 1.0f };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Suspension")
+	float WheelRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grip")
 	float LateralGripStrength = 5000.0f;
@@ -83,7 +85,6 @@ public:
 
 	// Variables
 
-	float WheelRadius;
 	FVector TireVelocity;
 	float SteerInput;
 	float AccelerationInput;
