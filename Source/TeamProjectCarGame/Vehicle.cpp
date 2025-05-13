@@ -82,7 +82,6 @@ void AVehicle::Tick(float DeltaTime)
 // Function to manage how the car reacts to elevation changes
 void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, USceneComponent* SuspensionRest, float SuspensionStrength, float WheelLoad, bool DebugDraw)
 {
-	
 	float DeltaTime = GetWorld()->GetDeltaSeconds();
 	FHitResult HitResult;
 	WheelRadius = GetWheelRadius(WheelMesh);
@@ -145,8 +144,8 @@ void AVehicle::SuspensionCast(USceneComponent* Wheel, UStaticMeshComponent* Whee
     	}
 	else if (carIsGrounded)
 	{
-		FVector GravityForce = FVector(0, 0, CarBody->GetMass() * GetWorld()->GetGravityZ());
-		CarBody->AddForceAtLocation(GravityForce, WheelMesh->GetComponentLocation());
+		FVector GravityForce = FVector(0, 0, CarBody->GetMass() * GetWorld()->GetGravityZ() / 1.5);
+		//CarBody->AddForceAtLocation(GravityForce, WheelMesh->GetComponentLocation());
 	}
 	else
 	{
@@ -194,7 +193,6 @@ void AVehicle::Debug()
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, DebugState);
 	}
 }
-
 
 // Function to create a line trace
 bool AVehicle::LineTrace(FVector StartLocation, FVector EndLocation, FHitResult& OutHitResult, bool bDrawDebug) const
@@ -303,13 +301,13 @@ void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 float AVehicle::GetWheelRadius(UStaticMeshComponent* WheelMesh)
 {
-	if (!WheelMesh || !WheelMesh->GetStaticMesh()) return 0.0f;  // Safety check
+    if (!WheelMesh || !WheelMesh->GetStaticMesh()) return 0.0f;  // Safety check
 
-	// Get the bounding box of the mesh
-	FVector BoxExtent = WheelMesh->GetStaticMesh()->GetBoundingBox().GetExtent();
-
-	// The radius is half the height (Z-axis extent)
-	return BoxExtent.Z;
+    // Directly get the scaled bounding box extent
+    FVector ScaledBoxExtent = WheelMesh->GetStaticMesh()->GetBoundingBox().GetExtent() * WheelMesh->GetComponentScale();
+    
+    // The radius is half the height (Z-axis extent)
+    return ScaledBoxExtent.Z;
 }
 
 void AVehicle::ApplyAccelerationForce(USceneComponent* Wheel, UStaticMeshComponent* WheelMesh, FVector Velocity, FVector AngularVelocity)
